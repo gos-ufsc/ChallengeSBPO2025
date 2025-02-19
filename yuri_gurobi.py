@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from read import parse_input
 
-example = "datasets/a/instance_0014.txt"
+example = "datasets/a/instance_0020.txt"
 parsed_data = parse_input(example)
 
 print("numero de itens:", parsed_data['num_items'])
@@ -62,6 +62,12 @@ model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n
 model.addConstr(gp.quicksum(pedido_X[i] * quantidade_pedidos[i] for i in range(n_pedidos))
                 <= gp.quicksum(corredor_Y[i] * quantidade_corredor[i] for i in range(n_corredores)))
 
+
+#restrição GERAL considerando os itens em cada pedido separadamente
+        
+
+
+
 model.optimize()
 
 
@@ -76,14 +82,37 @@ if model.status == GRB.OPTIMAL:
         #k += 1
     print('Obj: %g' % model.objVal)
 
+    pedidos = []
     print("Pedidos")
     for i in range(n_pedidos):
         if pedido_X[i].x == 1:
             print(parsed_data['orders'][i])
+            pedidos.append(parsed_data['orders'][i])
 
+    corredores = []
     print("Corredores")
     for i in range(n_corredores):
         if corredor_Y[i].x == 1:
             print(parsed_data['aisles'][i])
+            corredores.append(parsed_data['aisles'][i])
 
-    # função para validar resultado
+# função para validar resultado
+# def validar_resultado(pedido, corredor, parsed_data = parsed_data):
+#    itens_invalid = []
+#    itens_temp = [0 for i in range(parsed_data['num_items'])]
+#    for i in pedido:
+#        for j in i:
+#            itens_temp[j[0]] += j[1]
+#
+#    for i in corredor:
+#        for j in i:
+#            itens_temp[j[0]] -= j[1]
+#    for i in range(len(itens_temp)):
+#        if itens_temp[i] > 0:
+#            itens_invalid.append(i)
+#    print(itens_invalid)
+#    return itens_invalid
+#
+#    
+#validar  = validar_resultado(pedidos, corredores)
+    

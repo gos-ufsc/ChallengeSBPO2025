@@ -8,32 +8,28 @@ def parse_input(file_path):
     o, i, a = map(int, lines[0].split())
     current_line = 1
     
-    # Parse pedidos
-    orders = []
-    for _ in range(o):
+    # Matriz de pedidos (o x i)
+    orders_matrix = [[0] * i for _ in range(o)]
+    for order_idx in range(o):
         parts = list(map(int, lines[current_line].split()))
         k = parts[0]
         items = parts[1:]
-        order = []
-        for idx in range(0, len(items), 2):
-            item_num = items[idx]
-            quantity = items[idx + 1]
-            order.append((item_num, quantity))
-        orders.append(order)
+        for idx in range(0, 2*k, 2):  # Processa pares (item, quantidade)
+            item = items[idx]
+            qty = items[idx + 1]
+            orders_matrix[order_idx][item] = qty
         current_line += 1
 
-    # Parse corredores
-    aisles = []
-    for _ in range(a):
+    # Matriz de corredores (a x i)
+    aisles_matrix = [[0] * i for _ in range(a)]
+    for aisle_idx in range(a):
         parts = list(map(int, lines[current_line].split()))
         l = parts[0]
         items = parts[1:]
-        aisle = []
-        for idx in range(0, len(items), 2):
-            item_num = items[idx]
-            quantity = items[idx + 1]
-            aisle.append((item_num, quantity))
-        aisles.append(aisle)
+        for idx in range(0, 2*l, 2):  # Processa pares (item, quantidade)
+            item = items[idx]
+            qty = items[idx + 1]
+            aisles_matrix[aisle_idx][item] = qty
         current_line += 1
 
     # Parse limites da wave
@@ -42,23 +38,17 @@ def parse_input(file_path):
     # dados para simplificação
     soma_pedidos = []
     soma_corredor = []
-    for pedidos in orders:
-        temp = 0
-        for n_pedido in pedidos:
-            temp += n_pedido[1]
-        soma_pedidos.append(temp)
-    for corredor in aisles:
-        temp = 0
-        for n_corredor in corredor:
-            temp += n_corredor[1]
-        soma_corredor.append(temp)
+    for pedidos in orders_matrix:
+        soma_pedidos.append(sum(pedidos))
+    for corredor in aisles_matrix:
+        soma_corredor.append(sum(corredor))
 
     return {
         'num_orders': o,
         'num_items': i,
         'num_aisles': a,
-        'orders': orders,
-        'aisles': aisles,
+        'orders': orders_matrix,
+        'aisles': aisles_matrix,
         'LB': LB,
         'UB': UB,
         'soma_pedidos': soma_pedidos,
@@ -84,3 +74,5 @@ if __name__ == "__main__":
     print("******SIMPLIFICACAO******")
     print("soma_pedidos:", parsed_data['soma_pedidos'])
     print("soma_corredor:", parsed_data['soma_corredor'])
+
+    print("\nLimites da wave:", parsed_data['LB'], parsed_data['UB'])

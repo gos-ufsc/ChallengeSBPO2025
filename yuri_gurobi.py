@@ -7,22 +7,22 @@ import matplotlib.pyplot as plt
 
 from read import parse_input
 
-example = "datasets/a/instance_0020.txt"
+example = "datasets/a/instance_0003.txt"
 parsed_data = parse_input(example)
 
-print("numero de itens:", parsed_data['num_items'])
-print("Número de pedidos:", parsed_data['num_orders'])
+#print("numero de itens:", parsed_data['num_items'])
+#print("Número de pedidos:", parsed_data['num_orders'])
+##print("Primeiro pedido:", parsed_data['orders'][0])
+#print("Todos pedidos")
+#for i in parsed_data['orders']:
+#    print(i)
 #print("Primeiro pedido:", parsed_data['orders'][0])
-print("Todos pedidos")
-for i in parsed_data['orders']:
-    print(i)
-print("Primeiro pedido:", parsed_data['orders'][0])
-print("Número de corredores:", parsed_data['num_aisles'])
-#print("Primeiro corredor:", parsed_data['aisles'][0])
-print("Todos corredores")
-for i in parsed_data['aisles']:
-    print(i)
-print("Limites da wave:", "LB:", parsed_data['LB'], "UB:", parsed_data['UB'])
+#print("Número de corredores:", parsed_data['num_aisles'])
+##print("Primeiro corredor:", parsed_data['aisles'][0])
+#print("Todos corredores")
+#for i in parsed_data['aisles']:
+#    print(i)
+#print("Limites da wave:", "LB:", parsed_data['LB'], "UB:", parsed_data['UB'])
 
 #gurobi model
 
@@ -48,8 +48,6 @@ model.setObjective(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in rang
 
 #restricoes
 
-#quero que só tenha 1 corredor
-model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == 2)
 
 #quero que a soma de itens dos pedidos seja maior ou igual ao LB
 model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= LB)
@@ -68,14 +66,58 @@ for itens in range(n_itens):
     model.addConstr(gp.quicksum(pedido_X[i] * parsed_data['orders'][i][itens] for i in range(n_pedidos) if parsed_data['orders'][i][itens] > 0) 
                     <= gp.quicksum(corredor_Y[j] * parsed_data['aisles'][j][itens] for j in range(n_corredores)))
         
+#solucoes = []
+#solucoes_dict = {}
+best = 0
+melhor_solucao = []
+model.setParam('OutputFlag', 0)  # Desativa os prints
+for a in range(n_corredores):
+    #quero que só tenha 1 corredor
+    restricao_temporaria = model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == a+1)
+
+    #model.reset()
+    model.optimize()
+    if model.status == GRB.OPTIMAL:
+        #solucoes.append(model.objVal/(a+1))
+        print('Obj:', (model.objVal)/(a+1), "A = ", a +1)
+        if model.objVal/(a+1) > best:
+            best = model.objVal/(a+1)
+            pedidos = []
+            #print("Pedidos")
+            for i in range(n_pedidos):
+                if pedido_X[i].x == 1:
+                    #print(parsed_data['orders'][i])
+                    pedidos.append(parsed_data['orders'][i])
+
+            corredores = []
+            #print("Corredores")
+            for i in range(n_corredores):
+                if corredor_Y[i].x == 1:
+                    #print(parsed_data['aisles'][i])
+                    corredores.append(parsed_data['aisles'][i])
+            #solucoes_dict[a] = [pedidos, corredores]
+            melhor_solucao = [pedidos, corredores]
+    else:
+        pass
+        #solucoes.append(0)
+    model.remove(restricao_temporaria)
 
 
+print("MELHOR SOLUCAO")
+print("valor = ",  best)
+if True:
+    print("PEDIDOS")
+    for i in melhor_solucao[0]:
+        print(i)
+    print("CORREDORES")
+    for i in melhor_solucao[1]:
+        print(i)
 
-model.optimize()
 
-
+teste = False
 #se encontrar uma solucao
-if model.status == GRB.OPTIMAL:
+if teste == True:
+#if model.status == GRB.OPTIMAL:
     #ver as variaveis selecionadas
     k = 0
     for v in model.getVars():

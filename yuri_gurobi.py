@@ -49,7 +49,7 @@ model.setObjective(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in rang
 #restricoes
 
 #quero que só tenha 1 corredor
-model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == 1)
+model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == 2)
 
 #quero que a soma de itens dos pedidos seja maior ou igual ao LB
 model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= LB)
@@ -64,6 +64,9 @@ model.addConstr(gp.quicksum(pedido_X[i] * quantidade_pedidos[i] for i in range(n
 
 
 #restrição GERAL considerando os itens em cada pedido separadamente
+for itens in range(n_itens):
+    model.addConstr(gp.quicksum(pedido_X[i] * parsed_data['orders'][i][itens] for i in range(n_pedidos) if parsed_data['orders'][i][itens] > 0) 
+                    <= gp.quicksum(corredor_Y[j] * parsed_data['aisles'][j][itens] for j in range(n_corredores)))
         
 
 

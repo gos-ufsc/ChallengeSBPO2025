@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from read import parse_input
 
-example = "datasets/a/instance_0020.txt"
+example = "datasets/a/instance_0014.txt"
 parsed_data = parse_input(example)
 
 print("numero de itens:", parsed_data['num_items'])
@@ -64,21 +64,26 @@ model.addConstr(gp.quicksum(pedido_X[i] * quantidade_pedidos[i] for i in range(n
 
 model.optimize()
 
-#ver as variaveis selecionadas
-k = 0
-for v in model.getVars():
-    print('%s %g' % (v.varName, v.x))
-    #if v.x == 1:
-    #    print(parsed_data['orders'][k])
-    #k += 1
-print('Obj: %g' % model.objVal)
 
-print("Pedidos")
-for i in range(n_pedidos):
-    if pedido_X[i].x == 1:
-        print(parsed_data['orders'][i])
+#se encontrar uma solucao
+if model.status == GRB.OPTIMAL:
+    #ver as variaveis selecionadas
+    k = 0
+    for v in model.getVars():
+        print('%s %g' % (v.varName, v.x))
+        #if v.x == 1:
+        #    print(parsed_data['orders'][k])
+        #k += 1
+    print('Obj: %g' % model.objVal)
 
-print("Corredores")
-for i in range(n_corredores):
-    if corredor_Y[i].x == 1:
-        print(parsed_data['aisles'][i])
+    print("Pedidos")
+    for i in range(n_pedidos):
+        if pedido_X[i].x == 1:
+            print(parsed_data['orders'][i])
+
+    print("Corredores")
+    for i in range(n_corredores):
+        if corredor_Y[i].x == 1:
+            print(parsed_data['aisles'][i])
+
+    # função para validar resultado

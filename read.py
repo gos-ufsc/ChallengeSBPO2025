@@ -39,6 +39,20 @@ def parse_input(file_path):
     # Parse limites da wave
     LB, UB = map(int, lines[current_line].split())
 
+    # dados para simplificação
+    soma_pedidos = []
+    soma_corredor = []
+    for pedidos in orders:
+        temp = 0
+        for n_pedido in pedidos:
+            temp += n_pedido[1]
+        soma_pedidos.append(temp)
+    for corredor in aisles:
+        temp = 0
+        for n_corredor in corredor:
+            temp += n_corredor[1]
+        soma_corredor.append(temp)
+
     return {
         'num_orders': o,
         'num_items': i,
@@ -46,7 +60,9 @@ def parse_input(file_path):
         'orders': orders,
         'aisles': aisles,
         'LB': LB,
-        'UB': UB
+        'UB': UB,
+        'soma_pedidos': soma_pedidos,
+        'soma_corredor': soma_corredor
     }
 
 # Exemplo de uso
@@ -65,3 +81,6 @@ if __name__ == "__main__":
     for i in parsed_data['aisles']:
         print(i)
     print("Limites da wave:", "LB:", parsed_data['LB'], "UB:", parsed_data['UB'])
+    print("******SIMPLIFICACAO******")
+    print("soma_pedidos:", parsed_data['soma_pedidos'])
+    print("soma_corredor:", parsed_data['soma_corredor'])

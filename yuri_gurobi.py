@@ -4,10 +4,11 @@ from gurobipy import GRB
 #import pandas as pd
 import matplotlib.pyplot as plt
 #import math
+import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0003.txt"
+example = "datasets/a/instance_0020.txt"
 parsed_data = parse_input(example)
 
 #print("numero de itens:", parsed_data['num_items'])
@@ -35,7 +36,17 @@ LB = parsed_data['LB']
 UB = parsed_data['UB']
 
 quantidade_pedidos = parsed_data['soma_pedidos']
-quantidade_corredor = parsed_data['soma_corredor']
+
+if False:
+    from read import best_n_corredores
+    nnn = 300
+    if n_corredores > nnn:
+        n_corredores = nnn
+        parsed_data['aisles'], indices_anteriores, quantidade_corredor = best_n_corredores(parsed_data,n_corredores)
+    else:
+        quantidade_corredor = parsed_data['soma_corredor']
+else:
+    quantidade_corredor = parsed_data['soma_corredor']
 
 #variaveis de decisao
 
@@ -71,15 +82,19 @@ for itens in range(n_itens):
 best = 0
 melhor_solucao = []
 model.setParam('OutputFlag', 0)  # Desativa os prints
+
+total_temp = time.time()
 for a in range(n_corredores):
     #quero que só tenha 1 corredor
     restricao_temporaria = model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == a+1)
+    t = time.time()
 
     #model.reset()
     model.optimize()
     if model.status == GRB.OPTIMAL:
         #solucoes.append(model.objVal/(a+1))
         print('Obj:', (model.objVal)/(a+1), "A = ", a +1)
+        print("Tempo:", time.time() - t)
         if model.objVal/(a+1) > best:
             best = model.objVal/(a+1)
             pedidos = []
@@ -102,10 +117,12 @@ for a in range(n_corredores):
         #solucoes.append(0)
     model.remove(restricao_temporaria)
 
+total_temp = time.time() - total_temp
+print("Tempo total:", total_temp)
 
 print("MELHOR SOLUCAO")
 print("valor = ",  best)
-if True:
+if False:
     print("PEDIDOS")
     for i in melhor_solucao[0]:
         print(i)

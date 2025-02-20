@@ -1,4 +1,5 @@
 #ler arquivo
+import numpy as np
 
 def parse_input(file_path):
     with open(file_path, 'r') as f:
@@ -76,3 +77,16 @@ if __name__ == "__main__":
     print("soma_corredor:", parsed_data['soma_corredor'])
 
     print("\nLimites da wave:", parsed_data['LB'], parsed_data['UB'])
+
+def best_n_corredores(parsed_data,n):
+    melhores = []
+    melhores_indices = []
+    melhores_soma = []
+    arr = np.array(parsed_data['soma_corredor'])
+    indices_ordenados = np.argsort(arr)
+    for i in indices_ordenados[-n:]:
+        melhores.append(parsed_data['aisles'][i])
+        melhores_indices.append(i)
+        melhores_soma.append(parsed_data['soma_corredor'][i])
+    return melhores,melhores_indices,melhores_soma
+

@@ -8,7 +8,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0020.txt"
+example = "datasets/a/instance_0012.txt"
 parsed_data = parse_input(example)
 
 #print("numero de itens:", parsed_data['num_items'])
@@ -37,6 +37,8 @@ UB = parsed_data['UB']
 
 quantidade_pedidos = parsed_data['soma_pedidos']
 
+# Seria para considerar uma quantidade menor de corredores
+# False -> Estou desconsiderando isso e deixando o problema completo
 if False:
     from read import best_n_corredores
     nnn = 300
@@ -93,8 +95,8 @@ for a in range(n_corredores):
     model.optimize()
     if model.status == GRB.OPTIMAL:
         #solucoes.append(model.objVal/(a+1))
-        print('Obj:', (model.objVal)/(a+1), "A = ", a +1)
-        print("Tempo:", time.time() - t)
+        print('Obj:', (model.objVal)/(a+1), "A = ", a +1) 
+        print("Tempo = %.4f" % (time.time() - t))
         if model.objVal/(a+1) > best:
             best = model.objVal/(a+1)
             pedidos = []
@@ -113,7 +115,8 @@ for a in range(n_corredores):
             #solucoes_dict[a] = [pedidos, corredores]
             melhor_solucao = [pedidos, corredores]
     else:
-        pass
+        print("Nao tem solucao", "A = ", a + 1, end=" | ")
+        print("Tempo = %.4f" % (time.time() - t))
         #solucoes.append(0)
     model.remove(restricao_temporaria)
 

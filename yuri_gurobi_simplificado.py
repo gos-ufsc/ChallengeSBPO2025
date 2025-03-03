@@ -37,27 +37,12 @@ UB = parsed_data['UB']
 
 quantidade_pedidos = parsed_data['soma_pedidos']
 
-# Seria para considerar uma quantidade menor de corredores
-# False -> Estou desconsiderando isso e deixando o problema completo
-if False:
-    from read import best_n_corredores
-    nnn = 300
-    if n_corredores > nnn:
-        n_corredores = nnn
-        parsed_data['aisles'], indices_anteriores, quantidade_corredor = best_n_corredores(parsed_data,n_corredores)
-    else:
-        quantidade_corredor = parsed_data['soma_corredor']
-else:
-    quantidade_corredor = parsed_data['soma_corredor']
+quantidade_corredor = parsed_data['soma_corredor']
 
 #variaveis de decisao
 
 pedido_X = model.addVars(n_pedidos, vtype=GRB.BINARY, name="pedido_X")
 corredor_Y = model.addVars(n_corredores, vtype=GRB.BINARY, name="corredor_Y")
-
-# TESTE CONSIDERANDO AS VARIAVEIS BINARIAS COMO CONTINUAS E LB = 0 E UB = 1
-#pedido_X = model.addVars(n_pedidos, vtype=GRB.CONTINUOUS, name="pedido_X", lb=0, ub=1)
-#corredor_Y = model.addVars(n_corredores, vtype=GRB.CONTINUOUS, name="corredor_Y", lb=0, ub=1)
 
 #funcao objetivo
 #vai ser variavel
@@ -79,16 +64,13 @@ model.addConstr(gp.quicksum(pedido_X[i] * quantidade_pedidos[i] for i in range(n
 
 
 #restrição GERAL considerando os itens em cada pedido separadamente
-for itens in range(n_itens):
-    model.addConstr(gp.quicksum(pedido_X[i] * parsed_data['orders'][i][itens] for i in range(n_pedidos) if parsed_data['orders'][i][itens] > 0) 
-                    <= gp.quicksum(corredor_Y[j] * parsed_data['aisles'][j][itens] for j in range(n_corredores)))
-        
-        
+#for itens in range(n_itens):
+#    model.addConstr(gp.quicksum(pedido_X[i] * parsed_data['orders'][i][itens] for i in range(n_pedidos) if parsed_data['orders'][i][itens] > 0) 
+#                    <= gp.quicksum(corredor_Y[j] * parsed_data['aisles'][j][itens] for j in range(n_corredores)))
         
 #solucoes = []
 #solucoes_dict = {}
 best = 0
-best_A = 0
 melhor_solucao = []
 model.setParam('OutputFlag', 0)  # Desativa os prints
 
@@ -102,11 +84,10 @@ for a in range(n_corredores):
     model.optimize()
     if model.status == GRB.OPTIMAL:
         #solucoes.append(model.objVal/(a+1))
-        print('Obj:', (model.objVal)/(a+1), "A = ", a +1) 
-        print("Tempo = %.4f" % (time.time() - t))
+        print('Obj:', (model.objVal)/(a+1), "A = ", a +1)
+        print("Tempo:", time.time() - t)
         if model.objVal/(a+1) > best:
             best = model.objVal/(a+1)
-            best_A = a+1
             pedidos = []
             #print("Pedidos")
             for i in range(n_pedidos):
@@ -123,8 +104,7 @@ for a in range(n_corredores):
             #solucoes_dict[a] = [pedidos, corredores]
             melhor_solucao = [pedidos, corredores]
     else:
-        print("Nao tem solucao", "A = ", a + 1, end=" | ")
-        print("Tempo = %.4f" % (time.time() - t))
+        print("Nao tem solucao", "A = ", a + 1)
         #solucoes.append(0)
     model.remove(restricao_temporaria)
 
@@ -133,7 +113,6 @@ print("Tempo total:", total_temp)
 
 print("MELHOR SOLUCAO")
 print("valor = ",  best)
-print("Corredores = ", best_A)
 if False:
     print("PEDIDOS")
     for i in melhor_solucao[0]:
@@ -142,6 +121,33 @@ if False:
     for i in melhor_solucao[1]:
         print(i)
 
+
+teste = False
+#se encontrar uma solucao
+if teste == True:
+#if model.status == GRB.OPTIMAL:
+    #ver as variaveis selecionadas
+    k = 0
+    for v in model.getVars():
+        print('%s %g' % (v.varName, v.x))
+        #if v.x == 1:
+        #    print(parsed_data['orders'][k])
+        #k += 1
+    print('Obj: %g' % model.objVal)
+
+    pedidos = []
+    print("Pedidos")
+    for i in range(n_pedidos):
+        if pedido_X[i].x == 1:
+            print(parsed_data['orders'][i])
+            pedidos.append(parsed_data['orders'][i])
+
+    corredores = []
+    print("Corredores")
+    for i in range(n_corredores):
+        if corredor_Y[i].x == 1:
+            print(parsed_data['aisles'][i])
+            corredores.append(parsed_data['aisles'][i])
 
 # função para validar resultado
 # def validar_resultado(pedido, corredor, parsed_data = parsed_data):

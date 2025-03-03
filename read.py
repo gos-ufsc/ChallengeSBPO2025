@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     print("\nLimites da wave:", parsed_data['LB'], parsed_data['UB'])
 
-def best_n_corredores(parsed_data,n):
+def best_n_corredores(parsed_data,n:int):
     melhores = []
     melhores_indices = []
     melhores_soma = []
@@ -89,4 +89,41 @@ def best_n_corredores(parsed_data,n):
         melhores_indices.append(i)
         melhores_soma.append(parsed_data['soma_corredor'][i])
     return melhores,melhores_indices,melhores_soma
+
+
+"""
+# MUITO UTEIS PARA IDENTIFICAR PROBLEMAS INFACTIVEIS
+# Também podemos utilizar para auxiliar na redução de combinações em problemas combinatorios
+
+    A =      1 , 2, 3 ,4 ,5
+cenoura     [max A = 1, max A =2  .... max A = n_corredores]
+banana      [max A = 1, max A =2  .... max A = n_corredores]
+abacaxi     [max A = 1, max A =2  .... max A = n_corredores]
+maça        [max A = 1, max A =2  .... max A = n_corredores]
+laranja     [max A = 1, max A =2  .... max A = n_corredores]
+"""
+def max_suply_n_corredores(parsed_data, n:int):
+    lista_max_itens = []
+    # o maximo de cada coluna da matriz aisless
+    # [1°max, 1°max + 2°max, 1°max + 2°max + 3°max...]
+    # firs order max for item
+    n_itens = parsed_data['num_items']
+    arr = np.array(parsed_data['aisles'])
+    itens_list = []
+    # adicionar as colunas de aisles em itens_list
+    # 1 - pegar coluna
+    # 2 - ordenar coluna
+    # 3 - adicionar coluna em itens_list
+    for i in range(n_itens):
+        coluna = arr[:, i]
+        coluna_ordenada = np.sort(coluna)
+        itens_list.append(coluna_ordenada)
+    # pegar o maximo de cada coluna
+    # [1°max, 1°max + 2°max, 1°max + 2°max + 3°max...]
+    for item in itens_list:
+        max_itens = []
+        for i in range(len(item)):
+            max_itens.append(item[0:i+1].sum())
+        lista_max_itens.append(max_itens)
+    return lista_max_itens
 

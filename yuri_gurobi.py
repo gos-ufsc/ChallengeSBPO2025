@@ -8,7 +8,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0012.txt"
+example = "datasets/a/instance_0018.txt"
 parsed_data = parse_input(example)
 
 #print("numero de itens:", parsed_data['num_items'])
@@ -82,6 +82,7 @@ for itens in range(n_itens):
 #solucoes = []
 #solucoes_dict = {}
 best = 0
+best_A = 0
 melhor_solucao = []
 model.setParam('OutputFlag', 0)  # Desativa os prints
 
@@ -99,6 +100,7 @@ for a in range(n_corredores):
         print("Tempo = %.4f" % (time.time() - t))
         if model.objVal/(a+1) > best:
             best = model.objVal/(a+1)
+            best_A = a+1
             pedidos = []
             #print("Pedidos")
             for i in range(n_pedidos):
@@ -125,6 +127,7 @@ print("Tempo total:", total_temp)
 
 print("MELHOR SOLUCAO")
 print("valor = ",  best)
+print("Corredores = ", best_A)
 if False:
     print("PEDIDOS")
     for i in melhor_solucao[0]:
@@ -133,33 +136,6 @@ if False:
     for i in melhor_solucao[1]:
         print(i)
 
-
-teste = False
-#se encontrar uma solucao
-if teste == True:
-#if model.status == GRB.OPTIMAL:
-    #ver as variaveis selecionadas
-    k = 0
-    for v in model.getVars():
-        print('%s %g' % (v.varName, v.x))
-        #if v.x == 1:
-        #    print(parsed_data['orders'][k])
-        #k += 1
-    print('Obj: %g' % model.objVal)
-
-    pedidos = []
-    print("Pedidos")
-    for i in range(n_pedidos):
-        if pedido_X[i].x == 1:
-            print(parsed_data['orders'][i])
-            pedidos.append(parsed_data['orders'][i])
-
-    corredores = []
-    print("Corredores")
-    for i in range(n_corredores):
-        if corredor_Y[i].x == 1:
-            print(parsed_data['aisles'][i])
-            corredores.append(parsed_data['aisles'][i])
 
 # função para validar resultado
 # def validar_resultado(pedido, corredor, parsed_data = parsed_data):

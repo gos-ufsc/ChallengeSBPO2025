@@ -102,7 +102,7 @@ abacaxi     [max A = 1, max A =2  .... max A = n_corredores]
 maça        [max A = 1, max A =2  .... max A = n_corredores]
 laranja     [max A = 1, max A =2  .... max A = n_corredores]
 """
-def max_suply_n_corredores(parsed_data, n:int):
+def max_suply_n_corredores(parsed_data):
     lista_max_itens = []
     # o maximo de cada coluna da matriz aisless
     # [1°max, 1°max + 2°max, 1°max + 2°max + 3°max...]
@@ -126,4 +126,26 @@ def max_suply_n_corredores(parsed_data, n:int):
             max_itens.append(item[0:i+1].sum())
         lista_max_itens.append(max_itens)
     return lista_max_itens
+
+
+def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_selecionados:list):
+    pedidos = []
+    for i in pedidos_selecionados:
+        pedidos.append(parsed_data['orders'][i])
+    corredores = []
+    for i in corredores_selecionados:
+        corredores.append(parsed_data['aisles'][i])
+    pedidos = np.array(pedidos)
+    corredores = np.array(corredores)
+
+    # soma das colunas de pedidos menos soma das colunas de corredores
+
+    res_itens = []
+    for i in range(parsed_data['num_items']):
+        res_itens.append(corredores[:, i].sum() - pedidos[:, i].sum())
+    
+    for i in res_itens:
+        if i < 0:
+            return False
+    return True
 

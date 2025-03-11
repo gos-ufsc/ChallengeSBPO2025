@@ -8,7 +8,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0018.txt"
+example = "datasets/a/instance_0014.txt"
 parsed_data = parse_input(example)
 
 #print("numero de itens:", parsed_data['num_items'])
@@ -96,6 +96,8 @@ total_temp = time.time()
 for a in range(n_corredores):
     #quero que só tenha 1 corredor
     restricao_temporaria = model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == a+1)
+    restricao_temporaria_2 = model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= best*(a+1))
+    
     t = time.time()
 
     #model.reset()
@@ -127,6 +129,7 @@ for a in range(n_corredores):
         print("Tempo = %.4f" % (time.time() - t))
         #solucoes.append(0)
     model.remove(restricao_temporaria)
+    model.remove(restricao_temporaria_2)
 
 total_temp = time.time() - total_temp
 print("Tempo total:", total_temp)

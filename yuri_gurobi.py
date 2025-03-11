@@ -11,22 +11,6 @@ from read import parse_input
 example = "datasets/a/instance_0014.txt"
 parsed_data = parse_input(example)
 
-#print("numero de itens:", parsed_data['num_items'])
-#print("Número de pedidos:", parsed_data['num_orders'])
-##print("Primeiro pedido:", parsed_data['orders'][0])
-#print("Todos pedidos")
-#for i in parsed_data['orders']:
-#    print(i)
-#print("Primeiro pedido:", parsed_data['orders'][0])
-#print("Número de corredores:", parsed_data['num_aisles'])
-##print("Primeiro corredor:", parsed_data['aisles'][0])
-#print("Todos corredores")
-#for i in parsed_data['aisles']:
-#    print(i)
-#print("Limites da wave:", "LB:", parsed_data['LB'], "UB:", parsed_data['UB'])
-
-#gurobi model
-
 model  = gp.Model()
 
 n_pedidos  = parsed_data['num_orders']
@@ -51,7 +35,6 @@ else:
     quantidade_corredor = parsed_data['soma_corredor']
 
 #variaveis de decisao
-
 pedido_X = model.addVars(n_pedidos, vtype=GRB.BINARY, name="pedido_X")
 corredor_Y = model.addVars(n_corredores, vtype=GRB.BINARY, name="corredor_Y")
 
@@ -144,25 +127,3 @@ if False:
     print("CORREDORES")
     for i in melhor_solucao[1]:
         print(i)
-
-
-# função para validar resultado
-# def validar_resultado(pedido, corredor, parsed_data = parsed_data):
-#    itens_invalid = []
-#    itens_temp = [0 for i in range(parsed_data['num_items'])]
-#    for i in pedido:
-#        for j in i:
-#            itens_temp[j[0]] += j[1]
-#
-#    for i in corredor:
-#        for j in i:
-#            itens_temp[j[0]] -= j[1]
-#    for i in range(len(itens_temp)):
-#        if itens_temp[i] > 0:
-#            itens_invalid.append(i)
-#    print(itens_invalid)
-#    return itens_invalid
-#
-#    
-#validar  = validar_resultado(pedidos, corredores)
-    

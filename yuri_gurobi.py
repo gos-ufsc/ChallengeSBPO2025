@@ -114,6 +114,11 @@ for a in range(n_corredores):
     model.remove(restricao_temporaria)
     model.remove(restricao_temporaria_2)
 
+    # Sei que não existe soluções melhores
+    if best >= UB/(a+2):
+        print("Nao existe solução melhor")
+        break
+
 total_temp = time.time() - total_temp
 print("Tempo total:", total_temp)
 

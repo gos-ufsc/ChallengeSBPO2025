@@ -53,7 +53,8 @@ def parse_input(file_path):
         'LB': LB,
         'UB': UB,
         'soma_pedidos': soma_pedidos,
-        'soma_corredor': soma_corredor
+        'soma_corredor': soma_corredor,
+        'n_max_pedidos_UB': min_pedidos_UB(soma_pedidos, UB)
     }
 
 # Exemplo de uso
@@ -126,6 +127,21 @@ def max_suply_n_corredores(parsed_data):
             max_itens.append(item[0:i+1].sum())
         lista_max_itens.append(max_itens)
     return lista_max_itens
+
+# versão teste, pode ser melhor!
+def min_pedidos_UB(array:list, UB:int):
+    arr = sorted(array)
+    temp = 0
+    n = 0
+    # iterar sobre o array ao contrario
+    for i in arr:
+        temp += i
+        n+=1
+        # if temp == UB PERFECT!!
+        if temp > UB:
+            print(f"UB = {UB} sum_min = {temp}")
+            break
+    return n
 
 
 def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_selecionados:list):

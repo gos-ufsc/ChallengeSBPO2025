@@ -1,9 +1,6 @@
 import gurobipy as gp
 from gurobipy import GRB
-#import numpy as np
-#import pandas as pd
-import matplotlib.pyplot as plt
-#import math
+
 import time
 
 from read import parse_input
@@ -77,7 +74,12 @@ for i in range(n_pedidos):
 # Desigualdade valida e auxilio em infactibilidade
 #model.addConstr(gp.quicksum(quantidade_corredor[i] * corredor_Y[i] for i in range(n_corredores)) >= LB)
         
-        
+# aceleração
+n_max_UB = parsed_data['n_max_pedidos_UB']
+print(f'n_max = {n_max_UB}')
+model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB)
+
+
 #solucoes = []
 #solucoes_dict = {}
 best = 0
@@ -85,6 +87,7 @@ best_A = 0
 melhor_solucao = []
 model.setParam('OutputFlag', 0)  # Desativa os prints
 
+print("*****INICIO*****")
 total_temp = time.time()
 for a in range(n_corredores):
     #quero que só tenha 1 corredor
@@ -132,6 +135,9 @@ for a in range(n_corredores):
 total_temp = time.time() - total_temp
 print("Tempo total:", total_temp)
 
+#print somatoria de pedidos selecionados
+#res = sum(pedido_X[i].x for i in range(n_pedidos)) #teste para validação
+#print("somatoria dos pedidos selecionados", res)
 print("MELHOR SOLUCAO")
 print("valor = ",  best)
 print("Corredores = ", best_A)

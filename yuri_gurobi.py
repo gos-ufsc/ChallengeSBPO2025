@@ -25,7 +25,8 @@ quantidade_pedidos = parsed_data['soma_pedidos']
 # False -> Estou desconsiderando isso e deixando o problema completo
 if False:
     from read import best_n_corredores
-    nnn = 300
+    # resolver com 90% dos "melhores" corredores
+    nnn = int(0.9*n_corredores)
     if n_corredores > nnn:
         n_corredores = nnn
         parsed_data['aisles'], indices_anteriores, quantidade_corredor = best_n_corredores(parsed_data,n_corredores)

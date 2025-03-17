@@ -68,12 +68,11 @@ for itens in range(n_itens):
                     <= gp.quicksum(corredor_Y[j] * parsed_data['aisles'][j][itens] for j in range(n_corredores)))
         
         
-# Infactibilidades
-
-for i in range(n_pedidos):
-    if quantidade_pedidos[i] > UB:
-        #model.addConstr(pedido_X[i] == 0)
-        pedido_X[i].Fix(0)
+#  Infactibilidades
+#for i in range(n_pedidos):
+#    if quantidade_pedidos[i] > UB:
+#        model.addConstr(pedido_X[i] == 0)
+#        pedido_X[i].Fix(0)
 
 # Desigualdade valida e auxilio em infactibilidade
 #model.addConstr(gp.quicksum(quantidade_corredor[i] * corredor_Y[i] for i in range(n_corredores)) >= LB)

@@ -57,27 +57,6 @@ def parse_input(file_path):
         'n_max_pedidos_UB': min_pedidos_UB(soma_pedidos, UB)
     }
 
-# Exemplo de uso
-if __name__ == "__main__":
-    example = "datasets/a/instance_0020.txt"
-    parsed_data = parse_input(example)
-    print("Número de pedidos:", parsed_data['num_orders'])
-    #print("Primeiro pedido:", parsed_data['orders'][0])
-    print("Todos pedidos")
-    for i in parsed_data['orders']:
-        print(i)
-    print("Primeiro pedido:", parsed_data['orders'][0])
-    print("Número de corredores:", parsed_data['num_aisles'])
-    #print("Primeiro corredor:", parsed_data['aisles'][0])
-    print("Todos corredores")
-    for i in parsed_data['aisles']:
-        print(i)
-    print("Limites da wave:", "LB:", parsed_data['LB'], "UB:", parsed_data['UB'])
-    print("******SIMPLIFICACAO******")
-    print("soma_pedidos:", parsed_data['soma_pedidos'])
-    print("soma_corredor:", parsed_data['soma_corredor'])
-
-    print("\nLimites da wave:", parsed_data['LB'], parsed_data['UB'])
 
 def best_n_corredores(parsed_data,n:int):
     melhores = []
@@ -143,6 +122,20 @@ def min_pedidos_UB(array:list, UB:int):
             break
     return n
 
+def min_pedidos_LB(array:list, LB:int):
+    arr = sorted(array)
+    temp = 0
+    n = 0
+    # iterar sobre o array ao contrario
+    for i in arr:
+        temp += i
+        n+=1
+        # if temp == LB PERFECT!!
+        if temp > LB:
+            print(f"LB = {LB} sum_min = {temp}")
+            break
+    return n -1
+
 
 def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_selecionados:list):
     pedidos = []
@@ -165,3 +158,25 @@ def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_sele
             return False
     return True
 
+
+# Exemplo de uso
+if __name__ == "__main__":
+    example = "datasets/a/instance_0020.txt"
+    parsed_data = parse_input(example)
+    print("Número de pedidos:", parsed_data['num_orders'])
+    #print("Primeiro pedido:", parsed_data['orders'][0])
+    print("Todos pedidos")
+    for i in parsed_data['orders']:
+        print(i)
+    print("Primeiro pedido:", parsed_data['orders'][0])
+    print("Número de corredores:", parsed_data['num_aisles'])
+    #print("Primeiro corredor:", parsed_data['aisles'][0])
+    print("Todos corredores")
+    for i in parsed_data['aisles']:
+        print(i)
+    print("Limites da wave:", "LB:", parsed_data['LB'], "UB:", parsed_data['UB'])
+    print("******SIMPLIFICACAO******")
+    print("soma_pedidos:", parsed_data['soma_pedidos'])
+    print("soma_corredor:", parsed_data['soma_corredor'])
+
+    print("\nLimites da wave:", parsed_data['LB'], parsed_data['UB'])

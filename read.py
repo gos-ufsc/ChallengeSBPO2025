@@ -49,6 +49,13 @@ def parse_input(file_path):
     for corredor in aisles_matrix:
         soma_corredor.append(sum(corredor))
 
+    # Ordena os índices das linhas com base na soma de cada linha (ordem crescente)
+    indices_ordenados = sorted(range(len(soma_pedidos)), key=lambda i: soma_pedidos[i])
+
+    orders_matrix = [orders_matrix[i] for i in indices_ordenados]
+    soma_pedidos = sorted(soma_pedidos)
+
+    n_max_pedidos_UB, coeficientes_multiply = min_pedidos_UB(soma_pedidos, UB)
     return {
         'num_orders': o,
         'num_items': i,
@@ -114,7 +121,9 @@ def max_suply_n_corredores(parsed_data):
 
 # versão teste, pode ser melhor!
 def min_pedidos_UB(array:list, UB:int):
-    arr = sorted(array)
+    #arr = sorted(array)
+    # considerando que ele já esta ordenado
+    arr = array
     temp = 0
     n = 0
     # iterar sobre o array ao contrario

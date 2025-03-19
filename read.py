@@ -69,7 +69,9 @@ def parse_input(file_path):
         'UB': UB,
         'soma_pedidos': soma_pedidos,
         'soma_corredor': soma_corredor,
-        'n_max_pedidos_UB': min_pedidos_UB(soma_pedidos, UB)
+        'n_max_pedidos_UB': n_max_pedidos_UB,
+        'coeficientes_multiply': coeficientes_multiply,
+        'n_min_pedidos_LB': min_pedidos_LB(soma_pedidos, LB)
     }
 
 
@@ -129,18 +131,28 @@ def min_pedidos_UB(array:list, UB:int):
     arr = array
     temp = 0
     n = 0
+    multiplier_array = []
     # iterar sobre o array ao contrario
     for i in arr:
         temp += i
         n+=1
+        multiplier_array.append(1)
         # if temp == UB PERFECT!!
         if temp > UB:
             print(f"UB = {UB} sum_min = {temp}")
+            maior = i
             break
-    return n
+    for i in arr[n:]:
+        #alpha = i/maior
+        # usando int para evitar erros numericos
+        alpha = int(i/maior)
+        multiplier_array.append(alpha)
+    return (n, multiplier_array)
 
 def min_pedidos_LB(array:list, LB:int):
-    arr = sorted(array)
+    #arr = sorted(array)
+    # considerando que já esta ordenado
+    arr = array[::-1]
     temp = 0
     n = 0
     # iterar sobre o array ao contrario
@@ -148,10 +160,10 @@ def min_pedidos_LB(array:list, LB:int):
         temp += i
         n+=1
         # if temp == LB PERFECT!!
-        if temp > LB:
+        if temp >= LB:
             print(f"LB = {LB} sum_min = {temp}")
             break
-    return n -1
+    return n 
 
 
 def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_selecionados:list):

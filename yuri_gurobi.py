@@ -73,8 +73,14 @@ for itens in range(n_itens):
 # aceleração
 n_max_UB = parsed_data['n_max_pedidos_UB']
 print(f'n_max = {n_max_UB}')
-model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB)
+model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB - 1)
+# Mesma restrição porem mais forte
+#coedificientes_multiply = parsed_data['coeficientes_multiply']
+#model.addConstr(gp.quicksum(pedido_X[i]*coedificientes_multiply[i] for i in range(n_pedidos)) <= n_max_UB -1)
 
+n_min_LB = parsed_data['n_min_pedidos_LB']
+print(f'n_min = {n_min_LB}')
+model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
 
 #solucoes = []
 #solucoes_dict = {}

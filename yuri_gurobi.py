@@ -101,21 +101,21 @@ for a in range(n_corredores):
         if model.objVal/(a+1) > best:
             best = model.objVal/(a+1)
             best_A = a+1
-            pedidos = []
+            #pedidos = []
             #print("Pedidos")
-            for i in range(n_pedidos):
-                if pedido_X[i].x == 1:
+            #for i in range(n_pedidos):
+            #    if pedido_X[i].x == 1:
                     #print(parsed_data['orders'][i])
-                    pedidos.append(parsed_data['orders'][i])
+            #        pedidos.append(parsed_data['orders'][i])
 
-            corredores = []
+            #corredores = []
             #print("Corredores")
-            for i in range(n_corredores):
-                if corredor_Y[i].x == 1:
-                    #print(parsed_data['aisles'][i])
-                    corredores.append(parsed_data['aisles'][i])
+            #for i in range(n_corredores):
+            #    if corredor_Y[i].x == 1:
+            #        #print(parsed_data['aisles'][i])
+            #        corredores.append(parsed_data['aisles'][i])
             #solucoes_dict[a] = [pedidos, corredores]
-            melhor_solucao = [pedidos, corredores]
+            #melhor_solucao = [pedidos, corredores]
     else:
         print("Nao tem solucao", "A = ", a + 1, end=" | ")
         print("Tempo = %.4f" % (time.time() - t))

@@ -36,16 +36,19 @@ def parse_input(file_path):
     # Parse limites da wave
     LB, UB = map(int, lines[current_line].split())
 
+    temp_matrix = []
     # dados para simplificação
     soma_pedidos = []
     soma_corredor = []
     for pedidos_iter in range(len(orders_matrix)):
         soma = sum(orders_matrix[pedidos_iter])
         if soma > UB:
-            orders_matrix.drop(pedidos_iter)
+            #orders_matrix.drop(pedidos_iter)
             o -= 1
         else:
+            temp_matrix.append(orders_matrix[pedidos_iter])
             soma_pedidos.append(soma)
+    orders_matrix = temp_matrix
     for corredor in aisles_matrix:
         soma_corredor.append(sum(corredor))
 

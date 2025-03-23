@@ -165,6 +165,24 @@ def min_pedidos_LB(array:list, LB:int):
             break
     return n 
 
+# essa função pode ser otimizada para parar antes e também ser incrementada a def min_pedidos_UB para aproveitar o fluxo
+def coberturas_UB(array:list, UB:int):
+    #arr = sorted(array)
+    # considerando que já esta ordenado
+    arr = array[::-1]
+    arr_conjuntos = []
+    temp = 0
+    temp_arr = []
+    # iterar sobre o array ao contrario
+    for i in range(len(arr)):
+        temp += arr[i]
+        temp_arr.append(-i-1) # para eu ter o indice correto futuramente
+        if temp > UB:
+            arr_conjuntos.append(temp_arr)
+            temp = 0
+            temp_arr = []
+    return arr_conjuntos
+
 
 def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_selecionados:list):
     pedidos = []

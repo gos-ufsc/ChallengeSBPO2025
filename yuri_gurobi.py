@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0005.txt"
+example = "datasets/a/instance_0014.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -83,20 +83,20 @@ print(f'n_min = {n_min_LB}')
 model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
 
 # Novas Coberturas
-arr_conjuntos_UB = parsed_data['arr_conjuntos_UB']
-for conjunto_n in range(len(arr_conjuntos_UB)): 
-    conjunto = arr_conjuntos_UB[conjunto_n]
-    n = len(conjunto) 
-    if conjunto_n >0:
-        conjunto = conjunto + temp_conjunto
-        if len(conjunto) > n_max_UB:
-            # restrições desnecessárias
-            break
-    print(f'conjunto tamanho {n}')
-    temp_conjunto = conjunto
-    # i é um numero negativo para representar o indice corretamente
-    # i é referente ao array invertido, salvo como: - iter - 1
-    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
+#arr_conjuntos_UB = parsed_data['arr_conjuntos_UB']
+#for conjunto_n in range(len(arr_conjuntos_UB)): 
+#    conjunto = arr_conjuntos_UB[conjunto_n]
+#    n = len(conjunto) 
+#    if conjunto_n >0:
+#        conjunto = conjunto + temp_conjunto
+#        if len(conjunto) > n_max_UB:
+#            # restrições desnecessárias
+#            break
+#    print(f'conjunto tamanho {n}')
+#    temp_conjunto = conjunto
+#    # i é um numero negativo para representar o indice corretamente
+#    # i é referente ao array invertido, salvo como: - iter - 1
+#    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
 
 
 #solucoes = []

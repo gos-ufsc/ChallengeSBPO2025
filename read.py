@@ -71,7 +71,8 @@ def parse_input(file_path):
         'soma_corredor': soma_corredor,
         'n_max_pedidos_UB': n_max_pedidos_UB,
         'coeficientes_multiply': coeficientes_multiply,
-        'n_min_pedidos_LB': min_pedidos_LB(soma_pedidos, LB)
+        'n_min_pedidos_LB': min_pedidos_LB(soma_pedidos, LB),
+        'arr_conjuntos_UB': coberturas_UB(soma_pedidos, UB)
     }
 
 

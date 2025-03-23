@@ -82,6 +82,20 @@ n_min_LB = parsed_data['n_min_pedidos_LB']
 print(f'n_min = {n_min_LB}')
 model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
 
+# Novas Coberturas
+arr_conjuntos_UB = parsed_data['arr_conjuntos_UB']
+for conjunto_n in range(len(arr_conjuntos_UB)): 
+    conjunto = arr_conjuntos_UB[conjunto_n]
+    n = len(conjunto) 
+    print(f'conjunto tamanho {n}')
+    if conjunto_n >0:
+        conjunto = conjunto + temp_conjunto
+    temp_conjunto = conjunto
+    # i é um numero negativo para representar o indice corretamente
+    # i é referente ao array invertido, salvo como: - iter - 1
+    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
+
+
 #solucoes = []
 #solucoes_dict = {}
 best = 0

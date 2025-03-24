@@ -52,10 +52,11 @@ def parse_input(file_path):
     for corredor in aisles_matrix:
         soma_corredor.append(sum(corredor))
 
+    ####### Ordenar estraga o output posteriormente #######
+    ###    FEATURE PRECISA SER ADAPTADA FUTURAMENTE    ###
     # Ordena os índices das linhas com base na soma de cada linha (ordem crescente)
-    indices_ordenados = sorted(range(len(soma_pedidos)), key=lambda i: soma_pedidos[i])
-
-    orders_matrix = [orders_matrix[i] for i in indices_ordenados]
+    #indices_ordenados = sorted(range(len(soma_pedidos)), key=lambda i: soma_pedidos[i])
+    #orders_matrix = [orders_matrix[i] for i in indices_ordenados]
     soma_pedidos = sorted(soma_pedidos)
 
     n_max_pedidos_UB, coeficientes_multiply = min_pedidos_UB(soma_pedidos, UB)
@@ -100,6 +101,8 @@ abacaxi     [max A = 1, max A =2  .... max A = n_corredores]
 maça        [max A = 1, max A =2  .... max A = n_corredores]
 laranja     [max A = 1, max A =2  .... max A = n_corredores]
 """
+
+# NAO USAR, PORQUE ELA ALTERA A ORDEM DOS CORREDORES, E ISSO ESTRAGA O OUTPUT
 def max_suply_n_corredores(parsed_data):
     lista_max_itens = []
     # o maximo de cada coluna da matriz aisless

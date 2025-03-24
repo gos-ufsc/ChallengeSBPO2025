@@ -34,6 +34,8 @@ env/
 .conda/
 conda-meta/
 
+.vscode
+
 .idea
 .DS_Store
 /target/

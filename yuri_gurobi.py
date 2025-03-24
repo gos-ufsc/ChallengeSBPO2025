@@ -18,6 +18,8 @@ UB = parsed_data['UB']
 
 quantidade_pedidos = parsed_data['soma_pedidos']
 
+##### NAO USAR, PORQUE ELA ALTERA A ORDEM DOS CORREDORES, E ISSO ESTRAGA O OUTPUT #####
+##### FUNCAO PRECISA SER CORRIGIDA #####
 # Seria para considerar uma quantidade menor de corredores
 # False -> Estou desconsiderando isso e deixando o problema completo
 if False:
@@ -74,6 +76,8 @@ for itens in range(n_itens):
 n_max_UB = parsed_data['n_max_pedidos_UB']
 print(f'n_max = {n_max_UB}')
 model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB - 1)
+
+# NAO USAR ESTA RESTRIÇÃO POR ENQUANTO (precisa coincidir os coeficientes com a ordenação natural dos pedidos)
 # Mesma restrição porem mais forte
 #coedificientes_multiply = parsed_data['coeficientes_multiply']
 #model.addConstr(gp.quicksum(pedido_X[i]*coedificientes_multiply[i] for i in range(n_pedidos)) <= n_max_UB -1)

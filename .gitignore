@@ -33,3 +33,7 @@ venv/
 env/
 .conda/
 conda-meta/
+
+.idea
+.DS_Store
+/target/

@@ -19,7 +19,9 @@ public class Challenge {
     private int nItems;
     private int waveSizeLB;
     private int waveSizeUB;
-
+    private List<Integer> soma_pedidos;
+    private List<Integer> soma_corredor;
+    
     public void readInput(String inputFilePath) {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
@@ -34,11 +36,15 @@ public class Challenge {
             aisles = new ArrayList<>(nAisles);
             this.nItems = nItems;
 
-            // Read orders
-            readItemQuantityPairs(reader, nOrders, orders);
+            // INICIALIZAÇÃO DAS NOVAS LISTAS
+            soma_pedidos = new ArrayList<>(nOrders);
+            soma_corredor = new ArrayList<>(nAisles);
 
-            // Read aisles
-            readItemQuantityPairs(reader, nAisles, aisles);
+            // Read orders (COM CÁLCULO DA SOMA)
+            readItemQuantityPairs(reader, nOrders, orders, soma_pedidos);
+
+            // Read aisles (COM CÁLCULO DA SOMA)
+            readItemQuantityPairs(reader, nAisles, aisles, soma_corredor);
 
             // Read wave size bounds
             line = reader.readLine();
@@ -53,19 +59,27 @@ public class Challenge {
         }
     }
 
-    private void readItemQuantityPairs(BufferedReader reader, int nLines, List<Map<Integer, Integer>> orders) throws IOException {
+    // MÉTODO MODIFICADO PARA CALCULAR AS SOMAS (parâmetro adicional no final)
+    private void readItemQuantityPairs(BufferedReader reader, int nLines, 
+                                     List<Map<Integer, Integer>> orders,
+                                     List<Integer> sumList) throws IOException {
         String line;
         for (int orderIndex = 0; orderIndex < nLines; orderIndex++) {
             line = reader.readLine();
             String[] orderLine = line.split(" ");
             int nOrderItems = Integer.parseInt(orderLine[0]);
             Map<Integer, Integer> orderMap = new HashMap<>();
+            
+            int soma = 0; // VARIÁVEL PARA CÁLCULO DA SOMA
             for (int k = 0; k < nOrderItems; k++) {
                 int itemIndex = Integer.parseInt(orderLine[2 * k + 1]);
                 int itemQuantity = Integer.parseInt(orderLine[2 * k + 2]);
                 orderMap.put(itemIndex, itemQuantity);
+                soma += itemQuantity; // ACUMULA A SOMA
             }
+            
             orders.add(orderMap);
+            sumList.add(soma); // ADICIONA À LISTA DE SOMAS
         }
     }
 
@@ -120,7 +134,15 @@ public class Challenge {
         Challenge challenge = new Challenge();
         challenge.readInput(args[0]);
         var challengeSolver = new ChallengeSolver(
-                challenge.orders, challenge.aisles, challenge.nItems, challenge.waveSizeLB, challenge.waveSizeUB);
+                challenge.orders, 
+                challenge.aisles, 
+                challenge.nItems, 
+                challenge.waveSizeLB, 
+                challenge.waveSizeUB,
+                // NOVOS PARÂMETROS ADICIONADOS
+                challenge.soma_pedidos,
+                challenge.soma_corredor
+        );
         ChallengeSolution challengeSolution = challengeSolver.solve(stopWatch);
 
         challenge.writeOutput(challengeSolution, args[1]);

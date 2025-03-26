@@ -36,19 +36,22 @@ def parse_input(file_path):
     # Parse limites da wave
     LB, UB = map(int, lines[current_line].split())
 
-    temp_matrix = []
+    #temp_matrix = []
     # dados para simplificação
     soma_pedidos = []
     soma_corredor = []
     for pedidos_iter in range(len(orders_matrix)):
         soma = sum(orders_matrix[pedidos_iter])
-        if soma > UB:
-            #orders_matrix.drop(pedidos_iter)
-            o -= 1
-        else:
-            temp_matrix.append(orders_matrix[pedidos_iter])
-            soma_pedidos.append(soma)
-    orders_matrix = temp_matrix
+        #if soma > UB:
+        #    #orders_matrix.drop(pedidos_iter)
+        #    o -= 1
+        #else:
+        #    temp_matrix.append(orders_matrix[pedidos_iter])
+        #    soma_pedidos.append(soma)
+
+        soma_pedidos.append(soma)
+
+    #orders_matrix = temp_matrix
     for corredor in aisles_matrix:
         soma_corredor.append(sum(corredor))
 
@@ -57,9 +60,9 @@ def parse_input(file_path):
     # Ordena os índices das linhas com base na soma de cada linha (ordem crescente)
     #indices_ordenados = sorted(range(len(soma_pedidos)), key=lambda i: soma_pedidos[i])
     #orders_matrix = [orders_matrix[i] for i in indices_ordenados]
-    soma_pedidos = sorted(soma_pedidos)
+    soma_pedidos_2 = sorted(soma_pedidos)
 
-    n_max_pedidos_UB, coeficientes_multiply = min_pedidos_UB(soma_pedidos, UB)
+    n_max_pedidos_UB, coeficientes_multiply = min_pedidos_UB(soma_pedidos_2, UB)
     return {
         'num_orders': o,
         'num_items': i,
@@ -72,8 +75,8 @@ def parse_input(file_path):
         'soma_corredor': soma_corredor,
         'n_max_pedidos_UB': n_max_pedidos_UB,
         'coeficientes_multiply': coeficientes_multiply,
-        'n_min_pedidos_LB': min_pedidos_LB(soma_pedidos, LB),
-        'arr_conjuntos_UB': coberturas_UB(soma_pedidos, UB)
+        'n_min_pedidos_LB': min_pedidos_LB(soma_pedidos_2, LB),
+        'arr_conjuntos_UB': coberturas_UB(soma_pedidos_2, UB)
     }
 
 

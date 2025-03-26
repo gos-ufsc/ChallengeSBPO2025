@@ -9,10 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.Iterator;
 
 import org.apache.commons.lang3.time.StopWatch;
 
-import ilog.concert.*;
+import ilog.concert.IloConstraint;
+import ilog.concert.IloException;
+import ilog.concert.IloIntVar;
+import ilog.concert.IloLinearNumExpr;
 import ilog.cplex.IloCplex;
 
 public class ChallengeSolver {
@@ -107,9 +111,10 @@ public class ChallengeSolver {
                     }
                 }
                 
-                if (itemExpr.size() > 0) {
-                    cplex.addLe(itemExpr, 0);
-                }
+                //if (itemExpr.size() > 0) {
+                //   cplex.addLe(itemExpr, 0);
+                //}
+                cplex.addGe(itemExpr, 0);
             }
 
             // Fixar pedidos inviáveis

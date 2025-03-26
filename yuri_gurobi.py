@@ -188,15 +188,14 @@ for i in corredores:
 import sys
 
 # Verifica se os argumentos foram informados corretamente
-if len(sys.argv) != 3:
-    print("Uso: python programa.py <input-file> <output-file>")
-    sys.exit(1)
+#if len(sys.argv) != 3:
+#    print("Uso: python programa.py <input-file> <output-file>")
+#    sys.exit(1)
+#
+#    input_path = sys.argv[1]
+#    output_path = sys.argv[2]
 
-    #input_path = sys.argv[1]
-    output_path = sys.argv[2]
-else:
-    #input_path = "input.txt"
-    output_path = "output.txt"
+output_path = "output.txt"
 
 #criar arquivo de testo com o output esperad
 with open(output_path, "w") as file:

@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0014.txt"
+example = "datasets/a/instance_0020.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -125,24 +125,31 @@ for a in range(n_corredores):
         #solucoes.append(model.objVal/(a+1))
         print('Obj:', (model.objVal)/(a+1), "A = ", a +1) 
         print("Tempo = %.4f" % (time.time() - t))
-        if model.objVal/(a+1) > best:
+        if model.objVal/(a+1) >= best:
             best = model.objVal/(a+1)
             best_A = a+1
-            #pedidos = []
-            #print("Pedidos")
-            #for i in range(n_pedidos):
-            #    if pedido_X[i].x == 1:
-                    #print(parsed_data['orders'][i])
-            #        pedidos.append(parsed_data['orders'][i])
 
-            #corredores = []
-            #print("Corredores")
-            #for i in range(n_corredores):
-            #    if corredor_Y[i].x == 1:
-            #        #print(parsed_data['aisles'][i])
-            #        corredores.append(parsed_data['aisles'][i])
+            #PEDIDOS
+            pedidos = []
+            n_pedidos_atendidos = 0
+            for i in range(n_pedidos):
+                if pedido_X[i].x == 1:
+                    #print(parsed_data['orders'][i])
+                    #pedidos.append(parsed_data['orders'][i])
+                    n_pedidos_atendidos += 1
+                    pedidos.append(i)
+            
+            #CORREDORES
+            corredores = []
+            n_corredores_atendidos = 0
+            for i in range(n_corredores):
+                if corredor_Y[i].x == 1:
+                    #print(parsed_data['aisles'][i])
+                    #corredores.append(parsed_data['aisles'][i])
+                    n_corredores_atendidos += 1
+                    corredores.append(i)
             #solucoes_dict[a] = [pedidos, corredores]
-            #melhor_solucao = [pedidos, corredores]
+            melhor_solucao = [pedidos, corredores]
     else:
         print("Nao tem solucao", "A = ", a + 1, end=" | ")
         print("Tempo = %.4f" % (time.time() - t))
@@ -164,10 +171,38 @@ print("Tempo total:", total_temp)
 print("MELHOR SOLUCAO")
 print("valor = ",  best)
 print("Corredores = ", best_A)
-if False:
-    print("PEDIDOS")
-    for i in melhor_solucao[0]:
-        print(i)
-    print("CORREDORES")
-    for i in melhor_solucao[1]:
-        print(i)
+print("OUTPUT ESPERADO")
+#print("n pedidos atendidos = ", n_pedidos_atendidos)
+print(n_pedidos_atendidos)
+for i in pedidos:
+    print(i)
+#print("n corredores atendidos = ", n_corredores_atendidos)
+print(n_corredores_atendidos)
+for i in corredores:
+    print(i)
+
+import sys
+
+# Verifica se os argumentos foram informados corretamente
+if len(sys.argv) != 3:
+    print("Uso: python programa.py <input-file> <output-file>")
+    sys.exit(1)
+
+    #input_path = sys.argv[1]
+    output_path = sys.argv[2]
+else:
+    #input_path = "input.txt"
+    output_path = "output.txt"
+
+#criar arquivo de testo com o output esperad
+with open(output_path, "w") as file:
+    file.write(str(n_pedidos_atendidos))
+    file.write("\n")
+    for i in pedidos:
+        file.write(str(i))
+        file.write("\n")
+    file.write(str(n_corredores_atendidos))
+    file.write("\n")
+    for i in corredores:
+        file.write(str(i))
+        file.write("\n")

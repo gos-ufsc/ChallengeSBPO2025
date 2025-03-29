@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0020.txt"
+example = "datasets/a/instance_0005.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -116,13 +116,17 @@ model.setParam('OutputFlag', 0)  # Desativa os prints
 
 print("*****INICIO*****")
 total_temp = time.time()
+T = 60*2
 for a in range(n_corredores):
     #quero que só tenha 1 corredor
     restricao_temporaria = model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == a+1)
     restricao_temporaria_2 = model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= best*(a+1))
     
     t = time.time()
-
+    tempo_restante = T - (time.time() - total_temp)
+    if tempo_restante < 0:
+        break
+    model.setParam('TimeLimit', tempo_restante)
     #model.reset()
     model.optimize()
     if model.status == GRB.OPTIMAL:
@@ -178,12 +182,12 @@ print("Corredores = ", best_A)
 print("OUTPUT ESPERADO")
 #print("n pedidos atendidos = ", n_pedidos_atendidos)
 print(n_pedidos_atendidos)
-for i in pedidos:
-    print(i)
+#for i in pedidos:
+#    print(i)
 #print("n corredores atendidos = ", n_corredores_atendidos)
-print(n_corredores_atendidos)
-for i in corredores:
-    print(i)
+#print(n_corredores_atendidos)
+#for i in corredores:
+#    print(i)
 
 import sys
 
@@ -198,14 +202,15 @@ import sys
 output_path = "output.txt"
 
 #criar arquivo de testo com o output esperad
-with open(output_path, "w") as file:
-    file.write(str(n_pedidos_atendidos))
-    file.write("\n")
-    for i in pedidos:
-        file.write(str(i))
+if False:
+    with open(output_path, "w") as file:
+        file.write(str(n_pedidos_atendidos))
         file.write("\n")
-    file.write(str(n_corredores_atendidos))
-    file.write("\n")
-    for i in corredores:
-        file.write(str(i))
+        for i in pedidos:
+            file.write(str(i))
+            file.write("\n")
+        file.write(str(n_corredores_atendidos))
         file.write("\n")
+        for i in corredores:
+            file.write(str(i))
+            file.write("\n")

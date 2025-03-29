@@ -1,7 +1,5 @@
 package org.sbpo2025.challenge;
 
-import org.apache.commons.lang3.time.StopWatch;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -12,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.time.StopWatch;
+
 public class Challenge {
 
     private List<Map<Integer, Integer>> orders;
@@ -19,9 +19,7 @@ public class Challenge {
     private int nItems;
     private int waveSizeLB;
     private int waveSizeUB;
-    private List<Integer> soma_pedidos;
-    private List<Integer> soma_corredor;
-    
+
     public void readInput(String inputFilePath) {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
@@ -36,15 +34,11 @@ public class Challenge {
             aisles = new ArrayList<>(nAisles);
             this.nItems = nItems;
 
-            // INICIALIZAÇÃO DAS NOVAS LISTAS
-            soma_pedidos = new ArrayList<>(nOrders);
-            soma_corredor = new ArrayList<>(nAisles);
+            // Read orders
+            readItemQuantityPairs(reader, nOrders, orders);
 
-            // Read orders (COM CÁLCULO DA SOMA)
-            readItemQuantityPairs(reader, nOrders, orders, soma_pedidos);
-
-            // Read aisles (COM CÁLCULO DA SOMA)
-            readItemQuantityPairs(reader, nAisles, aisles, soma_corredor);
+            // Read aisles
+            readItemQuantityPairs(reader, nAisles, aisles);
 
             // Read wave size bounds
             line = reader.readLine();
@@ -59,27 +53,19 @@ public class Challenge {
         }
     }
 
-    // MÉTODO MODIFICADO PARA CALCULAR AS SOMAS (parâmetro adicional no final)
-    private void readItemQuantityPairs(BufferedReader reader, int nLines, 
-                                     List<Map<Integer, Integer>> orders,
-                                     List<Integer> sumList) throws IOException {
+    private void readItemQuantityPairs(BufferedReader reader, int nLines, List<Map<Integer, Integer>> orders) throws IOException {
         String line;
         for (int orderIndex = 0; orderIndex < nLines; orderIndex++) {
             line = reader.readLine();
             String[] orderLine = line.split(" ");
             int nOrderItems = Integer.parseInt(orderLine[0]);
             Map<Integer, Integer> orderMap = new HashMap<>();
-            
-            int soma = 0; // VARIÁVEL PARA CÁLCULO DA SOMA
             for (int k = 0; k < nOrderItems; k++) {
                 int itemIndex = Integer.parseInt(orderLine[2 * k + 1]);
                 int itemQuantity = Integer.parseInt(orderLine[2 * k + 2]);
                 orderMap.put(itemIndex, itemQuantity);
-                soma += itemQuantity; // ACUMULA A SOMA
             }
-            
             orders.add(orderMap);
-            sumList.add(soma); // ADICIONA À LISTA DE SOMAS
         }
     }
 
@@ -134,15 +120,7 @@ public class Challenge {
         Challenge challenge = new Challenge();
         challenge.readInput(args[0]);
         var challengeSolver = new ChallengeSolver(
-                challenge.orders, 
-                challenge.aisles, 
-                challenge.nItems, 
-                challenge.waveSizeLB, 
-                challenge.waveSizeUB,
-                // NOVOS PARÂMETROS ADICIONADOS
-                challenge.soma_pedidos,
-                challenge.soma_corredor
-        );
+                challenge.orders, challenge.aisles, challenge.nItems, challenge.waveSizeLB, challenge.waveSizeUB);
         ChallengeSolution challengeSolution = challengeSolver.solve(stopWatch);
 
         challenge.writeOutput(challengeSolution, args[1]);

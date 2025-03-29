@@ -196,7 +196,7 @@ public class ChallengeSolver {
                     objBoundExpr.addTerm(quantidade_pedidos.get(i), X[i]);
                 }
                 IloConstraint objBoundConstr = cplex.ge(objBoundExpr, bestRatio * numAisles);
-                //cplex.add(objBoundConstr);
+                cplex.add(objBoundConstr);
 
                 // Resolver
                 boolean solved = false;

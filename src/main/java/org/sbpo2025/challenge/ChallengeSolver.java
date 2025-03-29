@@ -172,16 +172,15 @@ public class ChallengeSolver {
             Set<Integer> bestAisles = new HashSet<>();
 
             // tempo maximo de 10 minutos
-            double time_limit = 60*2*1000; // milisegundos
-            double tempo_restante = 0.0;
+            float time_limit = 60*10 - 30; // segundos 9 min e 30 segundos (tempo de sobra para garantir entrega)
+            float tempo_restante = 0;
             for (int a = 0; a < aisles.size(); a++) {
 
-                //if (getRemainingTime(stopWatch) <= 0) break;
-                long elapsed = System.currentTimeMillis() - startTime;
+                float elapsed = (System.currentTimeMillis() - startTime)/1000; // em segundos
 
                 tempo_restante = time_limit - elapsed;
                 if (tempo_restante < 0) {
-                    System.out.println("⚠️ Time limit exceeded (" + System.currentTimeMillis() + " ms). Returning best solution found so far.");
+                    System.out.println("⚠️ Time limit exceeded (" + System.currentTimeMillis()/(60*1000) + " min). Returning best solution found so far.");
                     break;
                 }
                 cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);

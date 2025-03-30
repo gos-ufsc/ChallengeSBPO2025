@@ -192,10 +192,10 @@ public class ChallengeSolver {
                 else{
                     a++;}
 
-                float elapsed = (System.currentTimeMillis() - startTime)/1000; // em segundos
+                long elapsed = (System.currentTimeMillis() - startTime)/1000; // em segundos
 
                 //time limite ja considera menos 10 segundos
-                tempo_restante = time_limit - elapsed;
+                tempo_restante = (int) (time_limit - elapsed);
                 
                 //                         
                 if ((tempo_restante < time_left) && !reversed_mode_loop) {
@@ -207,7 +207,7 @@ public class ChallengeSolver {
                 }
 
                 if (tempo_restante < 0) {
-                    System.out.println("⚠️ Time limit exceeded (" + (System.currentTimeMillis()- startTime)/(60*1000) + " min). Returning best solution found so far.");
+                    System.out.println("⚠️ Time limit exceeded (" + (System.currentTimeMillis()- startTime) + " milis). Returning best solution found so far.");
                     break;
                 }
                 if (reversed_mode_loop) {
@@ -216,11 +216,12 @@ public class ChallengeSolver {
                 }
                 else{
                     //time limite ja considera menos 10 segundos
-                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante - time_left);
+                    //cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante - time_left);
+                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
                 }
 
                 int numAisles = a + 1;
-                System.out.println("\n === Trying with numAisles = " + numAisles + " ===");
+                //System.out.println("\n === Trying with numAisles = " + numAisles + " ===");
 
 
                 // Restrições temporárias
@@ -241,7 +242,7 @@ public class ChallengeSolver {
                 try {
                     //cplex.setWarning(System.out); // show warnings from CPLEX
                     cplex.exportModel("./debug_model.lp"); // save model to file
-                    System.out.println("Exporting model...");
+                    //System.out.println("Exporting model...");
                     solved = cplex.solve();
                 } catch (IloException e) {
                     System.err.println("CPLEX Error: " + e.getMessage());
@@ -250,9 +251,9 @@ public class ChallengeSolver {
                 if (solved && cplex.getStatus() == IloCplex.Status.Optimal || cplex.getStatus() == IloCplex.Status.Feasible) {
                     double objVal = cplex.getObjValue();
                     double currentRatio = objVal / numAisles;
-                    System.out.println("Solver status:"+cplex.getStatus());
-                    System.out.println("Objetive value:"+objVal);
-                    System.out.println("Final objective (units per aisle):"+(objVal/numAisles));
+                    //System.out.println("Solver status:"+cplex.getStatus());
+                    //System.out.println("Objetive value:"+objVal);
+                    //System.out.println("Final objective (units per aisle):"+(objVal/numAisles));
 
                     if (currentRatio >= bestRatio) {
                         bestRatio = currentRatio;
@@ -284,12 +285,12 @@ public class ChallengeSolver {
                             bestOrders = selectedOrders;
                             bestAisles = selectedAisles;
                         } else {
-                        System.out.println("✖ Infeasible solution found for numAisles = " + numAisles + " — discarded");
+                        //System.out.println("✖ Infeasible solution found for numAisles = " + numAisles + " — discarded");
                         }
                     }
                 }
                 if (!solved || cplex.getStatus() ==IloCplex.Status.Infeasible || cplex.getStatus() ==IloCplex.Status.Unbounded ) {
-                    System.out.println("No feasible or bounded solution found for numAisles = " + numAisles);
+                    //System.out.println("No feasible or bounded solution found for numAisles = " + numAisles);
                 }
                 // Remover restrições temporárias
                 cplex.remove(sumYConstr);
@@ -297,7 +298,7 @@ public class ChallengeSolver {
 
                 // Critério de parada                               nao pode estar no modo reverso tambem
                 if (bestRatio >= (waveSizeUB / (numAisles + 1.0)) && !reversed_mode_loop) {
-                    System.out.println("\n============\n No more aisles will be tried: it's not possible to find a better solution with more aisles\n============");
+                    //System.out.println("\n============\n No more aisles will be tried: it's not possible to find a better solution with more aisles\n============");
                     break;
                 }
             }

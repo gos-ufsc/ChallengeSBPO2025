@@ -185,7 +185,7 @@ public class ChallengeSolver {
             for (; a < aisles.size();) {
                 if (reversed_mode_loop) {
                     a--;
-                    if (a == before) {
+                    if (a <= before) {
                         break;
                     }
                 }

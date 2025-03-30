@@ -181,7 +181,7 @@ public class ChallengeSolver {
             int time_left = 60*2 + 20; // 2 min e 20 segundos para acabar o tempo vai entrar em acao o modo reverso
 
             int before = 0; // no loob reverso nao passar de onde foi revertido
-            int a = 0;
+            int a = -1; // Detalhe importante, já q o incremento ocorre no inicio
             for (; a < aisles.size();) {
                 if (reversed_mode_loop) {
                     a--;

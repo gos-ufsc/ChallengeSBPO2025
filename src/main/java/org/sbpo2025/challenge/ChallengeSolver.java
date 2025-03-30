@@ -212,11 +212,11 @@ public class ChallengeSolver {
                 }
                 if (reversed_mode_loop) {
                     //time limite ja considera menos 10 segundos
-                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante - time_left);
+                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
                 }
                 else{
                     //time limite ja considera menos 10 segundos
-                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
+                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante - time_left);
                 }
 
                 int numAisles = a + 1;

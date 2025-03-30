@@ -172,18 +172,52 @@ public class ChallengeSolver {
             Set<Integer> bestAisles = new HashSet<>();
 
             // tempo maximo de 10 minutos
-            float time_limit = 60*10 - 30; // segundos 9 min e 30 segundos (tempo de sobra para garantir entrega)
+            float time_limit = 60*10 - 10; // segundos 9 min e 50 segundos (tempo de sobra para garantir entrega)
+            // consideramos 10 segundos de sobra
             float tempo_restante = 0;
-            for (int a = 0; a < aisles.size(); a++) {
+            
+            boolean reversed_mode_loop = false;
+            // int tempo faltando
+            int time_left = 60*2 + 20; // 2 min e 20 segundos para acabar o tempo vai entrar em acao o modo reverso
+
+            int before = 0; // no loob reverso nao passar de onde foi revertido
+            int a = 0;
+            for (; a < aisles.size();) {
+                if (reversed_mode_loop) {
+                    a--;
+                    if (a == before) {
+                        break;
+                    }
+                }
+                else{
+                    a++;}
 
                 float elapsed = (System.currentTimeMillis() - startTime)/1000; // em segundos
 
+                //time limite ja considera menos 10 segundos
                 tempo_restante = time_limit - elapsed;
+                
+                //                         
+                if ((tempo_restante < time_left) && !reversed_mode_loop) {
+                    // dovisao inteira
+                    before = a;
+                    a = (int) aisles.size()/2; 
+                    reversed_mode_loop = true;
+
+                }
+
                 if (tempo_restante < 0) {
-                    System.out.println("⚠️ Time limit exceeded (" + System.currentTimeMillis()/(60*1000) + " min). Returning best solution found so far.");
+                    System.out.println("⚠️ Time limit exceeded (" + (System.currentTimeMillis()- startTime)/(60*1000) + " min). Returning best solution found so far.");
                     break;
                 }
-                cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
+                if (reversed_mode_loop) {
+                    //time limite ja considera menos 10 segundos
+                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante - time_left);
+                }
+                else{
+                    //time limite ja considera menos 10 segundos
+                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
+                }
 
                 int numAisles = a + 1;
                 System.out.println("\n === Trying with numAisles = " + numAisles + " ===");
@@ -261,8 +295,8 @@ public class ChallengeSolver {
                 cplex.remove(sumYConstr);
                 cplex.remove(objBoundConstr);
 
-                // Critério de parada
-                if (bestRatio >= (waveSizeUB / (numAisles + 1.0))) {
+                // Critério de parada                               nao pode estar no modo reverso tambem
+                if (bestRatio >= (waveSizeUB / (numAisles + 1.0)) && !reversed_mode_loop) {
                     System.out.println("\n============\n No more aisles will be tried: it's not possible to find a better solution with more aisles\n============");
                     break;
                 }

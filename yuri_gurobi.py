@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0005.txt"
+example = "datasets/a/instance_0014.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -116,7 +116,7 @@ model.setParam('OutputFlag', 0)  # Desativa os prints
 
 print("*****INICIO*****")
 total_temp = time.time()
-T = 60*2
+T = 60*10
 for a in range(n_corredores):
     #quero que só tenha 1 corredor
     restricao_temporaria = model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == a+1)

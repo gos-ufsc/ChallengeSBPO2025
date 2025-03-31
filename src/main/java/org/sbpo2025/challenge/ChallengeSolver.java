@@ -3,6 +3,7 @@ package org.sbpo2025.challenge;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -136,92 +137,98 @@ public class ChallengeSolver {
 
 
             // Restrições de aceleração
-             //List<Integer> sortedPedidosDesc = new ArrayList<>(quantidade_pedidos);
-             //sortedPedidosDesc.sort(Collections.reverseOrder());
-             //int sumLB = 0;
-             //int n_min_LB = 0;
-             //for (int q : sortedPedidosDesc) {
-             //    sumLB += q;
-             //    n_min_LB++;
-             //    if (sumLB >= waveSizeLB) break;
-             //}
+             List<Integer> sortedPedidosDesc = new ArrayList<>(quantidade_pedidos);
+             sortedPedidosDesc.sort(Collections.reverseOrder());
+             int sumLB = 0;
+             int n_min_LB = 0;
+             for (int q : sortedPedidosDesc) {
+                 sumLB += q;
+                 n_min_LB++;
+                 if (sumLB >= waveSizeLB) break;
+             }
 
-             //List<Integer> sortedPedidosAsc = new ArrayList<>(quantidade_pedidos);
-             //sortedPedidosAsc.sort(Comparator.naturalOrder());
-             //int sumUB = 0;
-             //int n_max_UB = 0;
-             //for (int q : sortedPedidosAsc) {
-             //    if (sumUB + q > waveSizeUB) break;
-             //    sumUB += q;
-             //    n_max_UB++;
-             //}
+             List<Integer> sortedPedidosAsc = new ArrayList<>(quantidade_pedidos);
+             sortedPedidosAsc.sort(Comparator.naturalOrder());
+             int sumUB = 0;
+             int n_max_UB = 0;
+             for (int q : sortedPedidosAsc) {
+                 if (sumUB + q > waveSizeUB) break;
+                 sumUB += q;
+                 n_max_UB++;
+             }
 
             // Restrição UB aceleração
-            // IloLinearNumExpr ubAccelExpr = cplex.linearNumExpr();
-            // for (IloIntVar x : X) ubAccelExpr.addTerm(1, x);
-            // cplex.addLe(ubAccelExpr, n_max_UB - 1);
+             IloLinearNumExpr ubAccelExpr = cplex.linearNumExpr();
+             for (IloIntVar x : X) ubAccelExpr.addTerm(1, x);
+             cplex.addLe(ubAccelExpr, n_max_UB);
 
             // Restrição LB aceleração
-            // IloLinearNumExpr lbAccelExpr = cplex.linearNumExpr();
-            // for (IloIntVar x : X) lbAccelExpr.addTerm(1, x);
-            // cplex.addGe(lbAccelExpr, n_min_LB);
+             IloLinearNumExpr lbAccelExpr = cplex.linearNumExpr();
+             for (IloIntVar x : X) lbAccelExpr.addTerm(1, x);
+             cplex.addGe(lbAccelExpr, n_min_LB);
 
-            // Busca pela melhor solução
+            // Best solution search
             double bestRatio = 0.0;
             Set<Integer> bestOrders = new HashSet<>();
             Set<Integer> bestAisles = new HashSet<>();
 
-            // tempo maximo de 10 minutos
-            float time_limit = 60*10 - 10; // segundos 9 min e 50 segundos (tempo de sobra para garantir entrega)
-            // consideramos 10 segundos de sobra
-            float tempo_restante = 0;
-            
+            // The loop shall search for a best solution in 9 minutes and 40 seconds
+            double time_limit = 60*10 - 20; // 9 minutes and 40 seconds, expressed in seconds
+            double tempo_restante = 0;
             boolean reversed_mode_loop = false;
-            // int tempo faltando
-            int time_left = 60*2 + 20; // 2 min e 20 segundos para acabar o tempo vai entrar em acao o modo reverso
+            // The time left is the time left at which point we enter the reverse mode. It is 3 minutes and 40 seconds
+            // That means we shall enter this part of the code when we reach 6 minutes of execution time in the loop with no answer
+            int time_left = 60*2 + 40; // 2 minutes and 40 seconds, expressed in seconds
+            int before = 0; // This storages the variable of the number of aisles before we change to reverse
 
-            int before = 0; // no loob reverso nao passar de onde foi revertido
-            int a = -1; // Detalhe importante, já q o incremento ocorre no inicio
+            int a = 0; //
             for (; a < aisles.size();) {
+
+                //The time we have left is tempo_restante
+                long elapsed = (System.currentTimeMillis() - startTime)/1000; // in seconds, the time since we started
+                tempo_restante = time_limit - elapsed; //The time we have left inside the loop
+                // if the time we have left (tempo_restante) is negative, we are already using our 20 seconds reserve, lets quit the loop immediately
+                if (tempo_restante <= 0) {
+                    System.out.println("⚠ Time limit exceeded (" + (System.currentTimeMillis()- startTime) + " milis). Returning best solution found so far.");
+                    break;
+                }
+                // If we do have time, but the time we have is already less or equal 2 minutes and 40 seconds...
+                //we enter the reverse mode (if we are not already there), but ONLY if there is no bestratio
+                if ((tempo_restante < time_left) && !reversed_mode_loop && bestRatio==0) {
+                    //So before is the aisle number that we are before changing to reverse
+                    before = a;
+                    a = (int)(before+aisles.size())/2;
+                    reversed_mode_loop = true;
+                    //System.out.println("⏱ Entering reverse mode — no feasible solution found yet.");
+                    //System.out.println("We stopped forward search at" + before);
+                }
+
                 if (reversed_mode_loop) {
                     a--;
-                    if (a <= before) {
+                    if (a < before) {
                         break;
                     }
                 }
                 else{
                     a++;}
 
-                long elapsed = (System.currentTimeMillis() - startTime)/1000; // em segundos
-
-                //time limite ja considera menos 10 segundos
-                tempo_restante = (int) (time_limit - elapsed);
-                
-                //                         
-                if ((tempo_restante < time_left) && !reversed_mode_loop) {
-                    // dovisao inteira
-                    before = a;
-                    a = (int) aisles.size()/2; 
-                    reversed_mode_loop = true;
-
-                }
-
-                if (tempo_restante < 0) {
-                    System.out.println("⚠️ Time limit exceeded (" + (System.currentTimeMillis()- startTime) + " milis). Returning best solution found so far.");
-                    break;
-                }
-                if (reversed_mode_loop) {
-                    //time limite ja considera menos 10 segundos
-                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
-                }
-                else{
-                    //time limite ja considera menos 10 segundos
-                    //cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante - time_left);
-                    cplex.setParam(IloCplex.Param.TimeLimit, tempo_restante);
-                }
-
-                int numAisles = a + 1;
+                int numAisles = a;
                 //System.out.println("\n === Trying with numAisles = " + numAisles + " ===");
+
+                double timeLimitToPass;
+
+                if (!reversed_mode_loop && bestRatio == 0.0) {
+                // We're in forward mode and no solution has been found yet
+                // Reserve time_left for possible reverse mode
+                    timeLimitToPass = Math.max(20, tempo_restante - time_left);
+                    //System.out.println("⏱ Forward mode with no solution found yet — Time given to CPLEX: " + timeLimitToPass + "s");
+                } else {
+                // Either already in reverse mode, or we already have a solution
+                timeLimitToPass = Math.max(5, tempo_restante);
+                //System.out.println("⏱ Using full remaining time - Reverse mode or we have a best " + timeLimitToPass + "s");
+                }
+
+                cplex.setParam(IloCplex.Param.TimeLimit, timeLimitToPass);
 
 
                 // Restrições temporárias
@@ -247,56 +254,72 @@ public class ChallengeSolver {
                 } catch (IloException e) {
                     System.err.println("CPLEX Error: " + e.getMessage());
                 }
+                if (solved){
+                    IloCplex.Status status = cplex.getStatus();
+                    IloCplex.CplexStatus cplexStatus = cplex.getCplexStatus();
 
-                if (solved && cplex.getStatus() == IloCplex.Status.Optimal || cplex.getStatus() == IloCplex.Status.Feasible) {
-                    double objVal = cplex.getObjValue();
-                    double currentRatio = objVal / numAisles;
-                    //System.out.println("Solver status:"+cplex.getStatus());
-                    //System.out.println("Objetive value:"+objVal);
-                    //System.out.println("Final objective (units per aisle):"+(objVal/numAisles));
+                    //System.out.println("Solver status: " + status);
+                    //System.out.println("CPLEX internal status: " + cplexStatus);
 
-                    if (currentRatio >= bestRatio) {
-                        bestRatio = currentRatio;
+                    if (status==IloCplex.Status.Feasible || status==IloCplex.Status.Optimal){
+                        double objVal = cplex.getObjValue();
+                        double currentRatio = objVal / numAisles;
+                        //System.out.println("Solver status:"+cplex.getStatus());
+                        //System.out.println("Objetive value:"+objVal);
+                        //System.out.println("Final objective (units per aisle):"+(objVal/numAisles));
 
-                        // Extrair solução
-                        Set<Integer> selectedOrders = new HashSet<>();
-                        //System.out.println("Selected orders:");
-                        for (int i = 0; i < X.length; i++) {
-                            double val = cplex.getValue(X[i]);
-                            //System.out.printf("X[%d]=%.3f%n",i,val);
-                            if (val > 0.9) {
-                                    selectedOrders.add(i);
+                        if (currentRatio >= bestRatio) {
+                            bestRatio = currentRatio;
+
+                            // Extrair solução
+                            Set<Integer> selectedOrders = new HashSet<>();
+                            //System.out.println("Selected orders:");
+                            for (int i = 0; i < X.length; i++) {
+                                double val = cplex.getValue(X[i]);
+                                //System.out.printf("X[%d]=%.3f%n",i,val);
+                                if (val > 0.9) {
+                                        selectedOrders.add(i);
+                                }
+                            }
+
+                            Set<Integer> selectedAisles = new HashSet<>();
+                            //System.out.println("Selected aisles:");
+                            for (int j = 0; j < Y.length; j++) {
+                                double val=cplex.getValue(Y[j]);
+                                //System.out.printf("Y[%d]=%.3f%n",j,val);
+                                if (val>0.9) {
+                                    selectedAisles.add(j);
+                                }
+                            }
+
+                            // Verificar viabilidade
+                            ChallengeSolution solution = new ChallengeSolution(selectedOrders, selectedAisles);
+                            if (isSolutionFeasible(solution)) {
+                                bestOrders = selectedOrders;
+                                bestAisles = selectedAisles;
+                            } else {
+                            //System.out.println("✖ Infeasible solution found for numAisles = " + numAisles + " — discarded");
                             }
                         }
+                    } else {
+                    //System.out.println("⚠ No solution found for numAisles = " + numAisles);
+                    //System.out.println("CPLEX internal status: " + cplexStatus);
+                    }
+                } else {
+                    IloCplex.CplexStatus cplexStatus = cplex.getCplexStatus();
+                    //System.out.println("⚠ No solution found for numAisles = " + numAisles);
+                    //System.out.println("CPLEX internal status: " + cplexStatus);
 
-                        Set<Integer> selectedAisles = new HashSet<>();
-                        //System.out.println("Selected aisles:");
-                        for (int j = 0; j < Y.length; j++) {
-                            double val=cplex.getValue(Y[j]);
-                            //System.out.printf("Y[%d]=%.3f%n",j,val);
-                            if (val>0.9) {
-                                selectedAisles.add(j);
-                            }
-                        }
-
-                        // Verificar viabilidade
-                        ChallengeSolution solution = new ChallengeSolution(selectedOrders, selectedAisles);
-                        if (isSolutionFeasible(solution)) {
-                            bestOrders = selectedOrders;
-                            bestAisles = selectedAisles;
-                        } else {
-                        //System.out.println("✖ Infeasible solution found for numAisles = " + numAisles + " — discarded");
-                        }
+                    if (cplexStatus == IloCplex.CplexStatus.AbortTimeLim) {
+                        //System.out.println("⏱ CPLEX aborted due to time limit before finding a solution.");
                     }
                 }
-                if (!solved || cplex.getStatus() ==IloCplex.Status.Infeasible || cplex.getStatus() ==IloCplex.Status.Unbounded ) {
-                    //System.out.println("No feasible or bounded solution found for numAisles = " + numAisles);
-                }
+
                 // Remover restrições temporárias
                 cplex.remove(sumYConstr);
                 cplex.remove(objBoundConstr);
 
-                // Critério de parada                               nao pode estar no modo reverso tambem
+                // The stopping criterion is only for forward mode
                 if (bestRatio >= (waveSizeUB / (numAisles + 1.0)) && !reversed_mode_loop) {
                     //System.out.println("\n============\n No more aisles will be tried: it's not possible to find a better solution with more aisles\n============");
                     break;

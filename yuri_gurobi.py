@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0014.txt"
+example = "datasets/a/instance_0020.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -16,23 +16,36 @@ n_corredores = parsed_data['num_aisles']
 LB = parsed_data['LB']
 UB = parsed_data['UB']
 
-quantidade_pedidos = parsed_data['soma_pedidos']
 
-##### NAO USAR, PORQUE ELA ALTERA A ORDEM DOS CORREDORES, E ISSO ESTRAGA O OUTPUT #####
-##### FUNCAO PRECISA SER CORRIGIDA #####
-# Seria para considerar uma quantidade menor de corredores
-# False -> Estou desconsiderando isso e deixando o problema completo
-if False:
-    from read import best_n_corredores
-    # resolver com 90% dos "melhores" corredores
-    nnn = int(0.9*n_corredores)
-    if n_corredores > nnn:
-        n_corredores = nnn
-        parsed_data['aisles'], indices_anteriores, quantidade_corredor = best_n_corredores(parsed_data,n_corredores)
-    else:
-        quantidade_corredor = parsed_data['soma_corredor']
-else:
-    quantidade_corredor = parsed_data['soma_corredor']
+quantidade_pedidos = []
+quantidade_corredor = []
+for pedidos_iter in range(n_pedidos):
+    soma = sum(parsed_data['orders'][pedidos_iter])
+    #if soma > UB:
+    #    #orders_matrix.drop(pedidos_iter)
+    #    o -= 1
+    #else:
+    #    temp_matrix.append(orders_matrix[pedidos_iter])
+    #    soma_pedidos.append(soma)
+    quantidade_pedidos.append(soma)
+
+#orders_matrix = temp_matrix
+for corredor in parsed_data['aisles']:
+    quantidade_corredor.append(sum(corredor))
+
+#enumerate crescente
+ordenado_pedidos = sorted(enumerate(quantidade_pedidos), key=lambda x: x[1])
+# = [indice_anterior, quantidade]
+ordenado_corredores = sorted(enumerate(quantidade_corredor), key=lambda x: x[1])
+
+pedidos_itens = [parsed_data['orders'][i] for i, j in ordenado_pedidos]
+corredores_itens = [parsed_data['aisles'][i] for i, j in ordenado_corredores]
+
+# sai mais rapido que fazer outro sort
+ordenado_quantidade_pedidos = [j for i, j in ordenado_pedidos]
+ordenado_quantidade_corredor = [j for i, j in ordenado_corredores]
+
+
 
 #variaveis de decisao
 pedido_X = model.addVars(n_pedidos, vtype=GRB.BINARY, name="pedido_X")
@@ -44,37 +57,37 @@ corredor_Y = model.addVars(n_corredores, vtype=GRB.BINARY, name="corredor_Y")
 
 #funcao objetivo
 #vai ser variavel
-model.setObjective(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)), GRB.MAXIMIZE)
+model.setObjective(gp.quicksum(ordenado_quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)), GRB.MAXIMIZE)
 
 #restricoes
 
 
 #quero que a soma de itens dos pedidos seja maior ou igual ao LB
-model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= LB)
+model.addConstr(gp.quicksum(ordenado_quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= LB)
 
 #quero que a soma de itens dos pedidos seja menor ou igual ao UB
-model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) <= UB)
+model.addConstr(gp.quicksum(ordenado_quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) <= UB)
 
 #quero que a quantidade de itens do pedido_X seja menor ou igual aos corredores corredor_Y selecionados
 #lembrando que podemos ter quantidade de pedidos diferentes de quantidade de corredores
-model.addConstr(gp.quicksum(pedido_X[i] * quantidade_pedidos[i] for i in range(n_pedidos))
-                <= gp.quicksum(corredor_Y[i] * quantidade_corredor[i] for i in range(n_corredores)))
+model.addConstr(gp.quicksum(pedido_X[i] * ordenado_quantidade_pedidos[i] for i in range(n_pedidos))
+                <= gp.quicksum(corredor_Y[i] * ordenado_quantidade_corredor[i] for i in range(n_corredores)))
 
 
 #restrição GERAL considerando os itens em cada pedido separadamente
 for itens in range(n_itens):
-    model.addConstr(gp.quicksum(pedido_X[i] * parsed_data['orders'][i][itens] for i in range(n_pedidos) if parsed_data['orders'][i][itens] > 0) 
-                    <= gp.quicksum(corredor_Y[j] * parsed_data['aisles'][j][itens] for j in range(n_corredores)))
+    model.addConstr(gp.quicksum(pedido_X[i] * pedidos_itens[i][itens] for i in range(n_pedidos) if pedidos_itens[i][itens] > 0) 
+                    <= gp.quicksum(corredor_Y[j] * corredores_itens[j][itens] for j in range(n_corredores)))
         
         
 # Infactibilidades
 for i in range(n_pedidos):
-    if quantidade_pedidos[i] > UB:
+    if ordenado_quantidade_pedidos[i] > UB:
         model.addConstr(pedido_X[i] == 0)
         #pedido_X[i].Fix(0)
 
 # Desigualdade valida e auxilio em infactibilidade
-#model.addConstr(gp.quicksum(quantidade_corredor[i] * corredor_Y[i] for i in range(n_corredores)) >= LB)
+#model.addConstr(gp.quicksum(ordenado_quantidade_corredor[i] * corredor_Y[i] for i in range(n_corredores)) >= LB)
         
 # aceleração
 n_max_UB = parsed_data['n_max_pedidos_UB']
@@ -120,7 +133,7 @@ T = 60*10
 for a in range(n_corredores):
     #quero que só tenha 1 corredor
     restricao_temporaria = model.addConstr(gp.quicksum(corredor_Y[i] for i in range(n_corredores)) == a+1)
-    restricao_temporaria_2 = model.addConstr(gp.quicksum(quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= best*(a+1))
+    restricao_temporaria_2 = model.addConstr(gp.quicksum(ordenado_quantidade_pedidos[i] * pedido_X[i] for i in range(n_pedidos)) >= best*(a+1))
     
     t = time.time()
     tempo_restante = T - (time.time() - total_temp)
@@ -142,8 +155,8 @@ for a in range(n_corredores):
             n_pedidos_atendidos = 0
             for i in range(n_pedidos):
                 if pedido_X[i].x == 1:
-                    #print(parsed_data['orders'][i])
-                    #pedidos.append(parsed_data['orders'][i])
+                    #print(pedidos_itens[i])
+                    #pedidos.append(pedidos_itens[i])
                     n_pedidos_atendidos += 1
                     pedidos.append(i)
             
@@ -152,8 +165,8 @@ for a in range(n_corredores):
             n_corredores_atendidos = 0
             for i in range(n_corredores):
                 if corredor_Y[i].x == 1:
-                    #print(parsed_data['aisles'][i])
-                    #corredores.append(parsed_data['aisles'][i])
+                    #print(corredores_itens[i])
+                    #corredores.append(corredores_itens[i])
                     n_corredores_atendidos += 1
                     corredores.append(i)
             #solucoes_dict[a] = [pedidos, corredores]
@@ -170,8 +183,24 @@ for a in range(n_corredores):
         print("Nao existe solução melhor")
         break
 
-total_temp = time.time() - total_temp
-print("Tempo total:", total_temp)
+
+# reescrever solução pelo com a ordem inicial correta usando o ordenado_pedidos e ordenado_corredores
+
+
+temp = []
+for i in pedidos:
+    temp.append(ordenado_pedidos[i][0])
+    print(ordenado_pedidos[i][0])
+
+
+temp.sort()
+pedidos = temp
+temp2 = []
+for i in corredores:
+    temp2.append(ordenado_corredores[i][0])
+temp2.sort()
+corredores = temp2
+
 
 #print somatoria de pedidos selecionados
 #res = sum(pedido_X[i].x for i in range(n_pedidos)) #teste para validação
@@ -202,7 +231,7 @@ import sys
 output_path = "output.txt"
 
 #criar arquivo de testo com o output esperad
-if False:
+if True:
     with open(output_path, "w") as file:
         file.write(str(n_pedidos_atendidos))
         file.write("\n")

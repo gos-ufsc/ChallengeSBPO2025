@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0020.txt"
+example = "datasets/a/instance_0002.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -104,20 +104,45 @@ print(f'n_min = {n_min_LB}')
 model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
 
 # Novas Coberturas
-#arr_conjuntos_UB = parsed_data['arr_conjuntos_UB']
-#for conjunto_n in range(len(arr_conjuntos_UB)): 
-#    conjunto = arr_conjuntos_UB[conjunto_n]
-#    n = len(conjunto) 
-#    if conjunto_n >0:
-#        conjunto = conjunto + temp_conjunto
-#        if len(conjunto) > n_max_UB:
-#            # restrições desnecessárias
-#            break
-#    print(f'conjunto tamanho {n}')
-#    temp_conjunto = conjunto
-#    # i é um numero negativo para representar o indice corretamente
-#    # i é referente ao array invertido, salvo como: - iter - 1
-#    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
+# cliques UB
+# Ex: a = [Xn-2, Xn-1, Xn] b = [Xn-5,Xn-4,Xn-3]
+def coberturas_UB(array:list, UB:int):
+    #arr = sorted(array)
+    # considerando que já esta ordenado
+    arr = array[::-1]
+    arr_conjuntos = []
+    temp = 0
+    temp_arr = []
+    # iterar sobre o array ao contrario
+    for i in range(len(arr)):
+        temp += arr[i]
+        temp_arr.append(-i-1) # para eu ter o indice correto futuramente
+        if temp > UB:
+            arr_conjuntos.append(temp_arr)
+            temp = 0
+            temp_arr = []
+    return arr_conjuntos
+
+# extend_b = a + b = [Xn-2, Xn-1, Xn] + [Xn-5,Xn-4,Xn-3]  <= n_b
+arr_conjuntos_UB = coberturas_UB(ordenado_quantidade_pedidos, UB)
+for conjunto_n in range(len(arr_conjuntos_UB)): 
+    conjunto = arr_conjuntos_UB[conjunto_n]
+    n = len(conjunto) 
+    if conjunto_n >0: #por causa do temp conjunto
+        # extends
+        conjunto = conjunto + temp_conjunto
+        if len(conjunto) > n_max_UB:
+            # restrições desnecessárias
+            break
+    print(f'conjunto tamanho {n}')
+    temp_conjunto = conjunto
+    # i é um numero negativo para representar o indice corretamente
+    # i é referente ao array invertido, salvo como: - iter - 1
+    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
+    
+
+
+# cliques LB
 
 
 #solucoes = []
@@ -183,6 +208,8 @@ for a in range(n_corredores):
         print("Nao existe solução melhor")
         break
 
+total_temp = time.time() - total_temp
+print("Tempo total:", total_temp)
 
 # reescrever solução pelo com a ordem inicial correta usando o ordenado_pedidos e ordenado_corredores
 
@@ -190,7 +217,7 @@ for a in range(n_corredores):
 temp = []
 for i in pedidos:
     temp.append(ordenado_pedidos[i][0])
-    print(ordenado_pedidos[i][0])
+    #print(ordenado_pedidos[i][0])
 
 
 temp.sort()
@@ -231,7 +258,7 @@ import sys
 output_path = "output.txt"
 
 #criar arquivo de testo com o output esperad
-if True:
+if False:
     with open(output_path, "w") as file:
         file.write(str(n_pedidos_atendidos))
         file.write("\n")

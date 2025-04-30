@@ -36,33 +36,6 @@ def parse_input(file_path):
     # Parse limites da wave
     LB, UB = map(int, lines[current_line].split())
 
-    #temp_matrix = []
-    # dados para simplificação
-    soma_pedidos = []
-    soma_corredor = []
-    for pedidos_iter in range(len(orders_matrix)):
-        soma = sum(orders_matrix[pedidos_iter])
-        #if soma > UB:
-        #    #orders_matrix.drop(pedidos_iter)
-        #    o -= 1
-        #else:
-        #    temp_matrix.append(orders_matrix[pedidos_iter])
-        #    soma_pedidos.append(soma)
-
-        soma_pedidos.append(soma)
-
-    #orders_matrix = temp_matrix
-    for corredor in aisles_matrix:
-        soma_corredor.append(sum(corredor))
-
-    ####### Ordenar estraga o output posteriormente #######
-    ###    FEATURE PRECISA SER ADAPTADA FUTURAMENTE    ###
-    # Ordena os índices das linhas com base na soma de cada linha (ordem crescente)
-    #indices_ordenados = sorted(range(len(soma_pedidos)), key=lambda i: soma_pedidos[i])
-    #orders_matrix = [orders_matrix[i] for i in indices_ordenados]
-    soma_pedidos_2 = sorted(soma_pedidos)
-
-    n_max_pedidos_UB, coeficientes_multiply = min_pedidos_UB(soma_pedidos_2, UB)
     return {
         'num_orders': o,
         'num_items': i,
@@ -70,13 +43,7 @@ def parse_input(file_path):
         'orders': orders_matrix,
         'aisles': aisles_matrix,
         'LB': LB,
-        'UB': UB,
-        'soma_pedidos': soma_pedidos,
-        'soma_corredor': soma_corredor,
-        'n_max_pedidos_UB': n_max_pedidos_UB,
-        'coeficientes_multiply': coeficientes_multiply,
-        'n_min_pedidos_LB': min_pedidos_LB(soma_pedidos_2, LB),
-        'arr_conjuntos_UB': coberturas_UB(soma_pedidos_2, UB)
+        'UB': UB
     }
 
 
@@ -105,7 +72,7 @@ maça        [max A = 1, max A =2  .... max A = n_corredores]
 laranja     [max A = 1, max A =2  .... max A = n_corredores]
 """
 
-# NAO USAR, PORQUE ELA ALTERA A ORDEM DOS CORREDORES, E ISSO ESTRAGA O OUTPUT
+# Ainda não está em uso, por isso não adicionei ao programa principal
 def max_suply_n_corredores(parsed_data):
     lista_max_itens = []
     # o maximo de cada coluna da matriz aisless
@@ -130,66 +97,6 @@ def max_suply_n_corredores(parsed_data):
             max_itens.append(item[0:i+1].sum())
         lista_max_itens.append(max_itens)
     return lista_max_itens
-
-# versão teste, pode ser melhor!
-def min_pedidos_UB(array:list, UB:int):
-    #arr = sorted(array)
-    # considerando que ele já esta ordenado
-    arr = array
-    temp = 0
-    n = 0
-    multiplier_array = []
-    # iterar sobre o array ao contrario
-    for i in arr:
-        temp += i
-        n+=1
-        multiplier_array.append(1)
-        # if temp == UB PERFECT!!
-        if temp > UB:
-            print(f"UB = {UB} sum_min = {temp}")
-            maior = i
-            break
-    for i in arr[n:]:
-        #alpha = i/maior
-        # usando int para evitar erros numericos
-        alpha = int(i/maior)
-        multiplier_array.append(alpha)
-    return (n, multiplier_array)
-
-def min_pedidos_LB(array:list, LB:int):
-    #arr = sorted(array)
-    # considerando que já esta ordenado
-    arr = array[::-1]
-    temp = 0
-    n = 0
-    # iterar sobre o array ao contrario
-    for i in arr:
-        temp += i
-        n+=1
-        # if temp == LB PERFECT!!
-        if temp >= LB:
-            print(f"LB = {LB} sum_min = {temp}")
-            break
-    return n 
-
-# essa função pode ser otimizada para parar antes e também ser incrementada a def min_pedidos_UB para aproveitar o fluxo
-def coberturas_UB(array:list, UB:int):
-    #arr = sorted(array)
-    # considerando que já esta ordenado
-    arr = array[::-1]
-    arr_conjuntos = []
-    temp = 0
-    temp_arr = []
-    # iterar sobre o array ao contrario
-    for i in range(len(arr)):
-        temp += arr[i]
-        temp_arr.append(-i-1) # para eu ter o indice correto futuramente
-        if temp > UB:
-            arr_conjuntos.append(temp_arr)
-            temp = 0
-            temp_arr = []
-    return arr_conjuntos
-
 
 def provar_factibilidade(parsed_data, pedidos_selecionados:list, corredores_selecionados:list):
     pedidos = []

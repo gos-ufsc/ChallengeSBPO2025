@@ -5,7 +5,7 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0002.txt"
+example = "datasets/a/instance_0004.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -89,8 +89,35 @@ for i in range(n_pedidos):
 # Desigualdade valida e auxilio em infactibilidade
 #model.addConstr(gp.quicksum(ordenado_quantidade_corredor[i] * corredor_Y[i] for i in range(n_corredores)) >= LB)
         
-# aceleração
-n_max_UB = parsed_data['n_max_pedidos_UB']
+# aceleração 
+# UB
+# versão teste, pode ser melhor!
+def min_pedidos_UB(array:list, UB:int):
+    #arr = sorted(array)
+    # considerando que ele já esta ordenado
+    arr = array
+    temp = 0
+    n = 0
+    multiplier_array = []
+    # iterar sobre o array ao contrario
+    for i in arr:
+        temp += i
+        n+=1
+        multiplier_array.append(1)
+        # if temp == UB PERFECT!!
+        if temp > UB:
+            print(f"UB = {UB} sum_min = {temp}")
+            maior = i
+            break
+    for i in arr[n:]:
+        #alpha = i/maior
+        # usando int para evitar erros numericos
+        alpha = int(i/maior)
+        multiplier_array.append(alpha)
+    return (n, multiplier_array)
+max_de_pedidos, multiplier_array = min_pedidos_UB(ordenado_quantidade_pedidos, UB)
+
+n_max_UB = max_de_pedidos
 print(f'n_max = {n_max_UB}')
 model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB - 1)
 
@@ -99,13 +126,31 @@ model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB -
 #coedificientes_multiply = parsed_data['coeficientes_multiply']
 #model.addConstr(gp.quicksum(pedido_X[i]*coedificientes_multiply[i] for i in range(n_pedidos)) <= n_max_UB -1)
 
-n_min_LB = parsed_data['n_min_pedidos_LB']
+def min_pedidos_LB(array:list, LB:int):
+    #arr = sorted(array)
+    # considerando que já esta ordenado
+    arr = array[::-1]
+    temp = 0
+    n = 0
+    # iterar sobre o array ao contrario
+    for i in arr:
+        temp += i
+        n+=1
+        # if temp == LB PERFECT!!
+        if temp >= LB:
+            print(f"LB = {LB} sum_min = {temp}")
+            break
+    return n 
+
+
+n_min_LB = min_pedidos_LB(ordenado_quantidade_pedidos, LB)
 print(f'n_min = {n_min_LB}')
 model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
 
 # Novas Coberturas
 # cliques UB
 # Ex: a = [Xn-2, Xn-1, Xn] b = [Xn-5,Xn-4,Xn-3]
+# essa função pode ser otimizada para parar antes e também ser incrementada a def min_pedidos_UB para aproveitar o fluxo
 def coberturas_UB(array:list, UB:int):
     #arr = sorted(array)
     # considerando que já esta ordenado
@@ -125,6 +170,7 @@ def coberturas_UB(array:list, UB:int):
 
 # extend_b = a + b = [Xn-2, Xn-1, Xn] + [Xn-5,Xn-4,Xn-3]  <= n_b
 arr_conjuntos_UB = coberturas_UB(ordenado_quantidade_pedidos, UB)
+contar = 0
 for conjunto_n in range(len(arr_conjuntos_UB)): 
     conjunto = arr_conjuntos_UB[conjunto_n]
     n = len(conjunto) 
@@ -139,7 +185,11 @@ for conjunto_n in range(len(arr_conjuntos_UB)):
     # i é um numero negativo para representar o indice corretamente
     # i é referente ao array invertido, salvo como: - iter - 1
     model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
-    
+    contar += 1
+# Saber o numero de cortes/restrições adicionadas
+print(f'conjuntos criados = {contar}')
+   
+
 
 
 # cliques LB

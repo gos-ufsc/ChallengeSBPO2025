@@ -5,7 +5,8 @@ import time
 
 from read import parse_input
 
-example = "datasets/a/instance_0004.txt"
+#example = "datasets/a/instance_0014.txt"
+example = "datasets/b/instance_0002.txt"
 parsed_data = parse_input(example)
 
 model  = gp.Model()
@@ -145,7 +146,8 @@ def min_pedidos_LB(array:list, LB:int):
 
 n_min_LB = min_pedidos_LB(ordenado_quantidade_pedidos, LB)
 print(f'n_min = {n_min_LB}')
-model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
+# Virou temporaria por porque vou refazer ela iterativamente conforme LB (best) aumenta
+restricao_temporaria_3 = model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB)
 
 # Novas Coberturas
 # cliques UB
@@ -246,6 +248,16 @@ for a in range(n_corredores):
                     corredores.append(i)
             #solucoes_dict[a] = [pedidos, corredores]
             melhor_solucao = [pedidos, corredores]
+
+            n_min_LB_new = min_pedidos_LB(ordenado_quantidade_pedidos, best*(a+1))
+            print(f'n_min lb = {n_min_LB} | n_min new = {n_min_LB_new}')
+            if n_min_LB_new > n_min_LB:
+                model.remove(restricao_temporaria_3)
+                # Virou temporaria por porque vou refazer ela iterativamente conforme LB (best) aumenta
+                restricao_temporaria_3 = model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) >= n_min_LB_new)
+
+            
+
     else:
         print("Nao tem solucao", "A = ", a + 1, end=" | ")
         print("Tempo = %.4f" % (time.time() - t))

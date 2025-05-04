@@ -111,8 +111,10 @@ def min_pedidos_UB(array:list, UB:int):
             maior = i
             break
     for i in arr[n:]:
-        #alpha = i/maior
+        # Precisa testar mais para saber qual o alpha ideal, por enquanto alpha int tem resultado melhor
+        #alpha = int((i/maior)*100)/100
         # usando int para evitar erros numericos
+        #alpha = int(i/maior + 0.99) # +0.99 para não somar 1 quando for um multiplo inteiro
         alpha = int(i/maior)
         multiplier_array.append(alpha)
     return (n, multiplier_array)
@@ -120,12 +122,9 @@ max_de_pedidos, multiplier_array = min_pedidos_UB(ordenado_quantidade_pedidos, U
 
 n_max_UB = max_de_pedidos
 print(f'n_max = {n_max_UB}')
-model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB - 1)
-
-# NAO USAR ESTA RESTRIÇÃO POR ENQUANTO (precisa coincidir os coeficientes com a ordenação natural dos pedidos)
+#model.addConstr(gp.quicksum(pedido_X[i] for i in range(n_pedidos)) <= n_max_UB - 1)
 # Mesma restrição porem mais forte
-#coedificientes_multiply = parsed_data['coeficientes_multiply']
-#model.addConstr(gp.quicksum(pedido_X[i]*coedificientes_multiply[i] for i in range(n_pedidos)) <= n_max_UB -1)
+model.addConstr(gp.quicksum(pedido_X[i]*multiplier_array[i] for i in range(n_pedidos)) <= n_max_UB -1)
 
 def min_pedidos_LB(array:list, LB:int):
     #arr = sorted(array)
@@ -171,13 +170,25 @@ def coberturas_UB(array:list, UB:int):
     return arr_conjuntos
 
 # extend_b = a + b = [Xn-2, Xn-1, Xn] + [Xn-5,Xn-4,Xn-3]  <= n_b
+""" um clique aqui poderia ser interessante.... porem dessa forma nos dá um extend direto"""
 arr_conjuntos_UB = coberturas_UB(ordenado_quantidade_pedidos, UB)
 contar = 0
 for conjunto_n in range(len(arr_conjuntos_UB)): 
     conjunto = arr_conjuntos_UB[conjunto_n]
     n = len(conjunto) 
+    multiplier_array = [1]*n
     if conjunto_n >0: #por causa do temp conjunto
         # extends
+        maximo = conjunto[-1]
+        for i in temp_conjunto:
+            # Precisa testar mais para saber qual o alpha ideal, por enquanto alpha int tem resultado melhor
+            # adicionei um multiplay para melhorar o desempenho
+            #alpha = int((i/maximo)*100)/100
+            # usando int para evitar erros numericos
+            #alpha = int(i/maximo + 0.99) # +0.99 para não somar 1 quando for um multiplo inteiro
+            alpha = int(i/maximo)
+            multiplier_array.append(alpha)
+
         conjunto = conjunto + temp_conjunto
         if len(conjunto) > n_max_UB:
             # restrições desnecessárias
@@ -186,7 +197,7 @@ for conjunto_n in range(len(arr_conjuntos_UB)):
     temp_conjunto = conjunto
     # i é um numero negativo para representar o indice corretamente
     # i é referente ao array invertido, salvo como: - iter - 1
-    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i] for i in conjunto) <= n -1)
+    model.addConstr(gp.quicksum(pedido_X[n_pedidos +i]*multiplier_array[i] for i in conjunto) <= n -1)
     contar += 1
 # Saber o numero de cortes/restrições adicionadas
 print(f'conjuntos criados = {contar}')

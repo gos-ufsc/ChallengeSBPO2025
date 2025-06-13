@@ -18,10 +18,11 @@
     <!--    mvn install:install-file -Dfile=/Applications/CPLEX_Studio2211//cplex/lib/cplex.jar -DgroupId=cplex -DartifactId=cplex -Dversion=22.11 -Dpackaging=jar-->
 
     <dependencies>
+        <!--        Uncomment the following lines to use CPLEX:-->
         <dependency>
             <groupId>cplex</groupId>
             <artifactId>cplex</artifactId>
-            <version>22.1.1</version>
+            <version>22.11</version>
             <scope>compile</scope>
         </dependency>
         <!--        Uncomment the following lines to use OR-Tools:-->

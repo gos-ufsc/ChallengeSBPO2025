@@ -345,6 +345,8 @@ public class ChallengeSolver {
                 } else {
                     // Dynamic tolerance based on depth
                     mipGapTolerance = calculateDynamicGapTolerance(currentBranch.depth);
+                    System.out.printf("Dynamic MIP gap tolerance for depth %d: %.6f%n", 
+                                     currentBranch.depth, mipGapTolerance);
                 }
                 
                 McCormickResult result = solveMcCormickForBranch(
@@ -492,7 +494,7 @@ public class ChallengeSolver {
         // Minimum tolerance to prevent excessive computation
         double minTolerance = 0.1; // 10% min tolerance
         
-        return Math.max(tolerance, minTolerance);
+        return Math.min(tolerance, minTolerance);
     }
 
     // ==================== HELPER METHODS ====================

@@ -14,11 +14,16 @@ import org.apache.commons.lang3.time.StopWatch;
 
 public class Challenge {
 
+    // Original variables
     private List<Map<Integer, Integer>> orders;
     private List<Map<Integer, Integer>> aisles;
     private int nItems;
     private int waveSizeLB;
     private int waveSizeUB;
+
+    // Bounds for t
+    double tLowerBound;
+    double tUpperBound;
 
     public void readInput(String inputFilePath) {
         try {
@@ -45,6 +50,10 @@ public class Challenge {
             String[] bounds = line.split(" ");
             waveSizeLB = Integer.parseInt(bounds[0]);
             waveSizeUB = Integer.parseInt(bounds[1]);
+
+            // Compute bounds for t=items/aisles
+            tLowerBound=(double) waveSizeLB/nAisles;
+            tUpperBound=(double) waveSizeUB;
 
             reader.close();
         } catch (IOException e) {
@@ -119,8 +128,17 @@ public class Challenge {
 
         Challenge challenge = new Challenge();
         challenge.readInput(args[0]);
+
         var challengeSolver = new ChallengeSolver(
-                challenge.orders, challenge.aisles, challenge.nItems, challenge.waveSizeLB, challenge.waveSizeUB);
+                challenge.orders,
+                challenge.aisles,
+                challenge.nItems,
+                challenge.waveSizeLB,
+                challenge.waveSizeUB,
+                challenge.tLowerBound,
+                challenge.tUpperBound
+        );
+
         ChallengeSolution challengeSolution = challengeSolver.solve(stopWatch);
 
         challenge.writeOutput(challengeSolution, args[1]);

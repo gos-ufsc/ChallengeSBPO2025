@@ -1,3 +1,7 @@
+// working with braching spliting interval in two
+
+
+
 package org.sbpo2025.challenge;
 
 import ilog.concert.IloConstraint;
@@ -7,16 +11,16 @@ import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -91,14 +95,12 @@ public class ChallengeSolver {
         final int aMax;
         final int depth;
         final double parentObj;
-        final int activeInterval; // Active interval from parent solution
 
-        Branch(int aMin, int aMax, int depth, double parentObj, int activeInterval) {
+        Branch(int aMin, int aMax, int depth, double parentObj) {
             this.aMin = aMin;
             this.aMax = aMax;
             this.depth = depth;
             this.parentObj = parentObj;
-            this.activeInterval = activeInterval;
         }
     }
 
@@ -111,8 +113,7 @@ public class ChallengeSolver {
         double obj;
         ChallengeSolution solution;
         List<IloConstraint> constraints;
-        int j_selected = -1; // Active McCormick interval index
-        boolean optimal;
+        int j_selected = -1;
     }
 
     public ChallengeSolution solve(StopWatch stopWatch) {
@@ -323,30 +324,17 @@ public class ChallengeSolver {
             System.out.printf("A_max is: %d%n", A_max);
 
             // ==================== BRANCH AND BOUND INITIALIZATION ====================
-            Deque<Branch> activeBranches = new ArrayDeque<>(); // Stack for DFS
-            // Root branch with full range and no active interval
-            activeBranches.push(new Branch(A_min, A_max, 0, 0, -1));
-            int maxDepth = 10; // Maximum depth of recursion
+            Queue<Branch> activeBranches = new LinkedList<>();
+            activeBranches.add(new Branch(A_min, A_max, 0, 0));
+            int maxDepth = 500;
             IloConstraint bestConstraint = null;
-            final double FIXED_MCCORMICK_GAP_TOL = 1e-4; // Fixed tolerance for McCormick gap
 
             // ==================== MAIN BRANCH LOOP ====================
             while (!activeBranches.isEmpty() && stopWatch.getTime() < deadline) {
-                Branch currentBranch = activeBranches.pop();
-                int intervalWidth = currentBranch.aMax - currentBranch.aMin + 1;
-                System.out.printf("\nExploring branch: A=[%d,%d] (width=%d) depth=%d activeInterval=%d%n",
-                        currentBranch.aMin, currentBranch.aMax, intervalWidth, 
-                        currentBranch.depth, currentBranch.activeInterval);
+                Branch currentBranch = activeBranches.poll();
+                System.out.printf("\nExploring branch: A=[%d,%d] depth=%d%n",
+                        currentBranch.aMin, currentBranch.aMax, currentBranch.depth);
 
-                // Determine MIP gap tolerance based on interval size
-                double mipGapTolerance;
-                if (intervalWidth <= 4) {
-                    mipGapTolerance = 1e-4; // Tight tolerance for small intervals
-                } else {
-                    // Dynamic tolerance based on depth
-                    mipGapTolerance = calculateDynamicGapTolerance(currentBranch.depth);
-                }
-                
                 McCormickResult result = solveMcCormickForBranch(
                     currentBranch.aMin,
                     currentBranch.aMax,
@@ -371,94 +359,40 @@ public class ChallengeSolver {
                     orders,
                     aisles,
                     quantidade_pedidos,
-                    deadline - stopWatch.getTime(),
-                    mipGapTolerance
+                    deadline - stopWatch.getTime()
                 );
+
                 if (result.feasible) {
                     double trueObj = computeObjectiveFunction(result.solution);
-                    System.out.printf("Branch solution: obj=%.4f gap=%.6f activeInterval=%d%n", 
-                                     trueObj, result.gap, result.j_selected);
+                    System.out.printf("Branch solution: obj=%.4f gap=%.6f%n", trueObj, result.gap);
 
-                    // Always update best solution if feasible and better, regardless of gap
-                    if (isSolutionFeasible(result.solution)) {
-                        if (trueObj > best_obj) {
-                            best_obj = trueObj;
-                            bestOrders = result.selectedOrders;
-                            bestAisles = result.selectedAisles;
-                            System.out.println("New best solution found!");
+                    if (isSolutionFeasible(result.solution) && trueObj > best_obj) {
+                        best_obj = trueObj;
+                        bestOrders = result.selectedOrders;
+                        bestAisles = result.selectedAisles;
+                        System.out.println("New best solution found!");
 
-                            // Add bound constraint for future branches
-                            if (bestConstraint != null) {
-                                try { mc_cplex.remove(bestConstraint); } catch (IloException e) {}
-                            }
-                            bestConstraint = mc_cplex.addGe(t, trueObj - 1e-5);
+                        // Add bound constraint for future branches
+                        if (bestConstraint != null) {
+                            try { mc_cplex.remove(bestConstraint); } catch (IloException e) {}
                         }
+                        bestConstraint = mc_cplex.addGe(t, trueObj - 1e-5);
                     }
 
-                    // Check if we should branch further
-                    boolean shouldBranch = false;
-                    if (result.gap > FIXED_MCCORMICK_GAP_TOL) {
-                        shouldBranch = true;
-                        System.out.printf("Branching due to McCormick gap (%.6f > tolerance)%n", result.gap);
-                    } else if (!result.optimal) {
-                        shouldBranch = true; // Branch if not solved to optimality
-                        System.out.println("Branching due to non-optimal node solution");
-                    }
-
-                    shouldBranch = shouldBranch && 
-                                (currentBranch.depth < maxDepth) && 
-                                (intervalWidth > 1);
-                    
-                    if (shouldBranch) {
-                        // Create N new subintervals
-                        int subWidth = intervalWidth / N;
-                        int remainder = intervalWidth % N;
+                    // Split branch if gap is not closed
+                    if (result.gap > 1e-3 && currentBranch.depth < maxDepth) {
+                        int mid = (currentBranch.aMin + currentBranch.aMax) / 2;
+                        System.out.printf("Splitting branch into [%d,%d] and [%d,%d]%n",
+                                currentBranch.aMin, mid, mid + 1, currentBranch.aMax);
                         
-                        System.out.printf("Splitting [%d,%d] (width=%d) into %d subintervals (gap=%.6f > tolerance=%.6f)%n",
-                                currentBranch.aMin, currentBranch.aMax, intervalWidth, 
-                                N, result.gap, FIXED_MCCORMICK_GAP_TOL);
-                        
-                        List<Branch> childBranches = new ArrayList<>();
-                        int start = currentBranch.aMin;
-                        for (int j = 0; j < N; j++) {
-                            int end = start + subWidth - 1;
-                            if (j < remainder) {
-                                end += 1;
-                            }
-                            if (end > currentBranch.aMax) {
-                                end = currentBranch.aMax;
-                            }
-                            
-                            // Only create branch if interval has at least 1 integer
-                            if (start <= end) {
-                                // Prioritize the active interval from parent solution
-                                int nextActive = (j == result.j_selected) ? result.j_selected : -1;
-                                childBranches.add(new Branch(start, end, currentBranch.depth + 1, trueObj, nextActive));
-                                System.out.printf("  Subinterval %d: [%d,%d] (width=%d)%n", 
-                                                 j, start, end, end - start + 1);
-                            }
-                            start = end + 1;
-                        }
-
-                        // Push child branches to stack in reverse order, but put active branch last
-                        // so it's explored next (DFS)
-                        int activeIdx = result.j_selected;
-                        for (int j = childBranches.size() - 1; j >= 0; j--) {
-                            if (j != activeIdx) {
-                                activeBranches.push(childBranches.get(j));
-                            }
-                        }
-                        if (activeIdx >= 0 && activeIdx < childBranches.size()) {
-                            activeBranches.push(childBranches.get(activeIdx));
-                        }
-                    } else if (result.gap <= FIXED_MCCORMICK_GAP_TOL) {
-                        System.out.println("McCormick gap closed in branch, not splitting");
-                    } else {
-                        System.out.println("Not splitting due to depth/interval constraints");
+                        activeBranches.add(new Branch(currentBranch.aMin, mid, 
+                                                    currentBranch.depth + 1, trueObj));
+                        activeBranches.add(new Branch(mid + 1, currentBranch.aMax, 
+                                                    currentBranch.depth + 1, trueObj));
+                    } else if (result.gap <= 1e-3) {
+                        System.out.println("Optimal solution found in branch, not splitting");
                     }
-                }else {
-                        System.out.println("Solution is not feasible, prunning");
-                    }
+                }
 
                 // Cleanup constraints
                 removeMcCormickConstraints(mc_cplex, result.constraints);
@@ -480,21 +414,6 @@ public class ChallengeSolver {
         }
     }
 
-    // Calculate dynamic gap tolerance based on depth
-    private double calculateDynamicGapTolerance(int depth) {
-        // Base tolerance at root level
-        double baseTolerance = 0.5; // 50% tolerance at root
-        
-        // Tolerance decreases exponentially with depth
-        double depthFactor = Math.pow(0.5, depth);
-        double tolerance = baseTolerance * depthFactor;
-        
-        // Minimum tolerance to prevent excessive computation
-        double minTolerance = 0.1; // 10% min tolerance
-        
-        return Math.max(tolerance, minTolerance);
-    }
-
     // ==================== HELPER METHODS ====================
     private McCormickResult solveMcCormickForBranch(
         int aMin, int aMax, int N, IloCplex mc_cplex, IloCplex lp_cplex,
@@ -503,7 +422,7 @@ public class ChallengeSolver {
         IloNumVar[] A_hat, IloNumVar[] t_hat, IloNumVar[] z, IloNumVar Avar,
         IloNumVar t, IloNumVar w, int waveSizeLB, int waveSizeUB, int nItems,
         List<Map<Integer, Integer>> orders, List<Map<Integer, Integer>> aisles,
-        List<Integer> quantidade_pedidos, long remainingTime, double mipGapTolerance
+        List<Integer> quantidade_pedidos, long remainingTime
     ) {
         McCormickResult result = new McCormickResult();
         result.constraints = new ArrayList<>();
@@ -582,18 +501,12 @@ public class ChallengeSolver {
             result.constraints.add(mc_cplex.addLe(w, ub1));
             result.constraints.add(mc_cplex.addLe(w, ub2));
 
-            // ==================== SOLVE MILP WITH DYNAMIC TOLERANCE ====================
+            // ==================== SOLVE MILP ====================
             double timeLimitToPass = Math.max(0.1, remainingTime / 1000.0);
             mc_cplex.setParam(IloCplex.Param.TimeLimit, timeLimitToPass);
             
-            // Set MIP gap tolerance
-            mc_cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, mipGapTolerance);
-            
-            System.out.printf("Solving with MIP gap tolerance: %.4f%n", mipGapTolerance);
-            
             if (mc_cplex.solve()) {
                 result.feasible = true;
-                result.optimal = (mc_cplex.getStatus() == IloCplex.Status.Optimal);
                 result.selectedOrders = extractSelectedOrders(mc_cplex, X_mc);
                 result.selectedAisles = extractSelectedAisles(mc_cplex, Y_mc);
                 result.solution = new ChallengeSolution(result.selectedOrders, result.selectedAisles);
@@ -646,6 +559,12 @@ public class ChallengeSolver {
     }
 
     // ==================== EXISTING METHODS ====================
+    protected long getRemainingTime(StopWatch stopWatch) {
+        return Math.max(
+                TimeUnit.SECONDS.convert(MAX_RUNTIME - stopWatch.getTime(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS),
+                0);
+    }
+
     protected boolean isSolutionFeasible(ChallengeSolution challengeSolution) {
         Set<Integer> selectedOrders = challengeSolution.orders();
         Set<Integer> visitedAisles = challengeSolution.aisles();

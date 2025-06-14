@@ -33,6 +33,7 @@ public class ChallengeSolver {
     protected double tUpperBound;
     protected List<Integer> quantidade_pedidos;
     protected List<Integer> quantidade_corredor;
+    
 
     static {
         try {
@@ -62,13 +63,15 @@ public class ChallengeSolver {
             int waveSizeUB,
             double tLowerBound,
             double tUpperBound) {
-        this.orders = orders;
-        this.aisles = aisles;
-        this.nItems = nItems;
-        this.waveSizeLB = waveSizeLB;
-        this.waveSizeUB = waveSizeUB;
-        this.tLowerBound = tLowerBound;
-        this.tUpperBound = tUpperBound;
+            this.orders = orders;
+            this.aisles = aisles;
+            this.nItems = nItems;
+            this.waveSizeLB = waveSizeLB;
+            this.waveSizeUB = waveSizeUB;
+            this.tLowerBound = tLowerBound;
+            this.tUpperBound = tUpperBound;
+
+        
 
         // Compute soma_pedidos
         this.quantidade_pedidos = new ArrayList<>();
@@ -326,7 +329,7 @@ public class ChallengeSolver {
             Deque<Branch> activeBranches = new ArrayDeque<>(); // Stack for DFS
             // Root branch with full range and no active interval
             activeBranches.push(new Branch(A_min, A_max, 0, 0, -1));
-            int maxDepth = 10; // Maximum depth of recursion
+            int maxDepth = 100; // Maximum depth of recursion
             IloConstraint bestConstraint = null;
             final double FIXED_MCCORMICK_GAP_TOL = 1e-4; // Fixed tolerance for McCormick gap
 
@@ -485,7 +488,7 @@ public class ChallengeSolver {
     // Calculate dynamic gap tolerance based on depth
     private double calculateDynamicGapTolerance(int depth) {
         // Base tolerance at root level
-        double baseTolerance = 0.5; // 50% tolerance at root
+        double baseTolerance = 0.1; // 50% tolerance at root
         
         // Tolerance decreases exponentially with depth
         double depthFactor = Math.pow(0.5, depth);
@@ -591,7 +594,8 @@ public class ChallengeSolver {
             // Set MIP gap tolerance
             mc_cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, mipGapTolerance);
             
-            System.out.printf("Solving with MIP gap tolerance: %.4f%n", mipGapTolerance);
+            // System.out.printf("Solving with MIP gap tolerance: %.4f%n", mipGapTolerance);
+
             
             if (mc_cplex.solve()) {
                 result.feasible = true;
@@ -599,6 +603,7 @@ public class ChallengeSolver {
                 result.selectedOrders = extractSelectedOrders(mc_cplex, X_mc);
                 result.selectedAisles = extractSelectedAisles(mc_cplex, Y_mc);
                 result.solution = new ChallengeSolution(result.selectedOrders, result.selectedAisles);
+
                 
                 double wVal = mc_cplex.getValue(w);
                 double AVal = mc_cplex.getValue(Avar);

@@ -35,25 +35,25 @@ public class ChallengeSolver {
     protected List<Integer> quantidade_corredor;
     
 
-    static {
-        try {
-            // Try to load from standard library path first
-            System.loadLibrary("cplex");
-            System.out.println("Loaded CPLEX library from system path");
-        } catch (UnsatisfiedLinkError e) {
-            System.err.println("System load failed, trying explicit path...");
-            try {
-                // Explicit path to your CPLEX library
-                System.load("/opt/ibm/ILOG/CPLEX_Studio2211/cplex/bin/x86-64_linux/libcplex2211.so");
-                System.out.println("Loaded CPLEX library from explicit path");
-            } catch (UnsatisfiedLinkError e2) {
-                System.err.println("CRITICAL: Failed to load CPLEX library");
-                System.err.println("Error: " + e2.getMessage());
-                System.err.println("Please check your CPLEX installation at /opt/ibm/ILOG/CPLEX_Studio2211/cplex");
-                System.exit(1);
-            }
-        }
-    }
+    // static {
+    //     try {
+    //         // Try to load from standard library path first
+    //         System.loadLibrary("cplex");
+    //         // System.out.println("Loaded CPLEX library from system path");
+    //     } catch (UnsatisfiedLinkError e) {
+    //         System.err.println("System load failed, trying explicit path...");
+    //         try {
+    //             // Explicit path to your CPLEX library
+    //             System.load("/opt/ibm/ILOG/CPLEX_Studio2211/cplex/bin/x86-64_linux/libcplex2211.so");
+    //             // System.out.println("Loaded CPLEX library from explicit path");
+    //         } catch (UnsatisfiedLinkError e2) {
+    //             // System.err.println("CRITICAL: Failed to load CPLEX library");
+    //             // System.err.println("Error: " + e2.getMessage());
+    //             // System.err.println("Please check your CPLEX installation at /opt/ibm/ILOG/CPLEX_Studio2211/cplex");
+    //             System.exit(1);
+    //         }
+    //     }
+    // }
 
     public ChallengeSolver(
             List<Map<Integer, Integer>> orders,
@@ -95,13 +95,18 @@ public class ChallengeSolver {
         final int depth;
         final double parentObj;
         final int activeInterval; // Active interval from parent solution
+        final Set<Integer> parentOrderSolution;  // NEW: Store order solution
+        final Set<Integer> parentAisleSolution;   // NEW: Store aisle solution
 
-        Branch(int aMin, int aMax, int depth, double parentObj, int activeInterval) {
+        Branch(int aMin, int aMax, int depth, double parentObj, int activeInterval,
+        Set<Integer> parentOrderSolution, Set<Integer> parentAisleSolution) {
             this.aMin = aMin;
             this.aMax = aMax;
             this.depth = depth;
             this.parentObj = parentObj;
             this.activeInterval = activeInterval;
+            this.parentOrderSolution = parentOrderSolution;  // NEW
+            this.parentAisleSolution = parentAisleSolution;   // NEW
         }
     }
 
@@ -121,6 +126,7 @@ public class ChallengeSolver {
     public ChallengeSolution solve(StopWatch stopWatch) {
         try {
             long deadline = MAX_RUNTIME - 10000; // 10 minutes minus 10 seconds for writing output
+            // System.out.println("SOLVER START: " + stopWatch.getTime() + "ms");
 
             // ==================== GENERAL VARIABLES AND MISC ====================
             int nOrders = orders.size();
@@ -134,6 +140,7 @@ public class ChallengeSolver {
             System.out.println("==================== Starting Solver ====================");
 
             // ========================== LP SOLVER INITIALIZATION ==============================
+            long lpSetupStart = stopWatch.getTime();
             IloCplex lp_cplex = new IloCplex();
             lp_cplex.setOut(null);
             lp_cplex.setWarning(null);
@@ -172,8 +179,11 @@ public class ChallengeSolver {
                 }
                 lp_cplex.addLe(itemExpr, 0);
             }
+            // System.out.println("LP solver setup: " + (stopWatch.getTime() - lpSetupStart) + "ms");
+
 
             // ========================== MILP SOLVER INITIALIZATION ==============================
+            long milpSetupStart = stopWatch.getTime();
             IloCplex mc_cplex = new IloCplex();
             mc_cplex.setOut(null);
             mc_cplex.setWarning(null);
@@ -254,7 +264,113 @@ public class ChallengeSolver {
                     mc_cplex.addEq(X_mc[i], 0);
                 }
             }
+            // System.out.println("MILP solver setup: " + (stopWatch.getTime() - milpSetupStart) + "ms");
 
+            // ==================== ADD CUTS ====================
+            // valid ineq.
+            long cutSetupStart = stopWatch.getTime();
+            int cutCount = 0;
+
+            for (int o = 0; o < nOrders; o++) {
+                Map<Integer, Integer> orderItems = orders.get(o);
+                for (Integer item : orderItems.keySet()) {
+                    IloLinearNumExpr aisleSumExpr = mc_cplex.linearNumExpr();
+                    boolean foundAisle = false;
+                    
+                    for (int a = 0; a < nAisles; a++) {
+                        if (aisles.get(a).containsKey(item)) {
+                            aisleSumExpr.addTerm(1.0, Y_mc[a]);
+                            foundAisle = true;
+                        }
+                    }
+                    
+                    if (foundAisle) {
+                        mc_cplex.addLe(X_mc[o], aisleSumExpr);
+                        cutCount++;
+                    }
+                }
+            }
+
+            // // Precompute total supply and min demand per item
+            // Map<Integer, Double> totalSupplyPerItem = new HashMap<>();
+            // Map<Integer, Integer> minDemandPerItem = new HashMap<>();
+
+            // // Initialize with default values
+            // for (int item = 0; item < nItems; item++) {
+            //     totalSupplyPerItem.put(item, 0.0);
+            //     minDemandPerItem.put(item, Integer.MAX_VALUE);
+            // }
+
+            // // Compute total supply from aisles
+            // for (int a = 0; a < nAisles; a++) {
+            //     Map<Integer, Integer> aisle = aisles.get(a);
+            //     for (Map.Entry<Integer, Integer> entry : aisle.entrySet()) {
+            //         int item = entry.getKey();
+            //         int qty = entry.getValue();
+            //         totalSupplyPerItem.put(item, totalSupplyPerItem.get(item) + qty);
+            //     }
+            // }
+
+            // // Compute min demand from orders
+            // for (int o = 0; o < nOrders; o++) {
+            //     Map<Integer, Integer> order = orders.get(o);
+            //     for (Map.Entry<Integer, Integer> entry : order.entrySet()) {
+            //         int item = entry.getKey();
+            //         int demand = entry.getValue();
+            //         int currentMin = minDemandPerItem.get(item);
+            //         if (demand < currentMin) {
+            //             minDemandPerItem.put(item, demand);
+            //         }
+            //     }
+            // }
+            // System.out.printf("Added %d valid inequality constraints%n", cutCount);
+
+            // Track added constraints
+            // int forceZeroConstraints = 0;
+            // int maxOrderConstraints = 0;
+
+            // // Add constraints for each item
+            // for (int item = 0; item < nItems; item++) {
+            //     double totalSupply = totalSupplyPerItem.get(item);
+            //     int minDemand = minDemandPerItem.get(item);
+                
+            //     // Skip if no valid demand (item not in any order)
+            //     if (minDemand == Integer.MAX_VALUE) continue;
+                
+            //     // Handle insufficient supply
+            //     if (totalSupply < minDemand) {
+            //         for (int o = 0; o < nOrders; o++) {
+            //             if (orders.get(o).containsKey(item)) {
+            //                 mc_cplex.addEq(X_mc[o], 0);
+            //                 forceZeroConstraints++;
+            //             }
+            //         }
+            //         continue;
+            //     }
+                
+            //     // Calculate max orders (floor division)
+            //     int maxOrders = (int) Math.floor(totalSupply / minDemand);
+                
+            //     // Create expression for orders containing this item
+            //     IloLinearNumExpr orderSumExpr = mc_cplex.linearNumExpr();
+            //     boolean hasOrders = false;
+                
+            //     for (int o = 0; o < nOrders; o++) {
+            //         if (orders.get(o).containsKey(item)) {
+            //             orderSumExpr.addTerm(1.0, X_mc[o]);
+            //             hasOrders = true;
+            //         }
+            //     }
+                
+            //     // Only add constraint if item exists in orders
+            //     if (hasOrders) {
+            //         mc_cplex.addLe(orderSumExpr, maxOrders);
+            //         maxOrderConstraints++;
+            //     }
+            // }
+            // System.out.printf("Added %d force-zero constraints, %d max-order constraints%n",
+            //         forceZeroConstraints, maxOrderConstraints);
+            
             // Cover cuts
             List<Integer> sortedPedidosDesc = new ArrayList<>(quantidade_pedidos);
             sortedPedidosDesc.sort(Collections.reverseOrder());
@@ -281,8 +397,11 @@ public class ChallengeSolver {
             for (IloNumVar x : X_mc) lbAccelExpr.addTerm(1, x);
             mc_cplex.addGe(lbAccelExpr, n_min_LB);
 
+            System.out.println("Added cuts: " + (stopWatch.getTime() - cutSetupStart) + "ms");
+
             // ==================== FIND A_min ====================
-            System.out.println("Finding A_min...");
+            long aMinStart = stopWatch.getTime();
+            // System.out.println("Finding A_min...");
             int A_min = 1;
             int A_Active = nAisles;
             for (int A = 1; A <= nAisles; A++) {
@@ -317,24 +436,31 @@ public class ChallengeSolver {
                     }
                     break;
                 } else {
-                    System.out.printf("LP infeasible for A = %d%n", A);
+                    // System.out.printf("LP infeasible for A = %d%n", A);
                 }
                 lp_cplex.remove(sumYConstr);
             }
             System.out.printf("A_min is: %d%n", A_min);
             int A_max = nAisles;
             System.out.printf("A_max is: %d%n", A_max);
+            // System.out.println("A_min calculation time: " + (stopWatch.getTime() - aMinStart) + "ms");
 
             // ==================== BRANCH AND BOUND INITIALIZATION ====================
+            long branchSetupStart = stopWatch.getTime();
             Deque<Branch> activeBranches = new ArrayDeque<>(); // Stack for DFS
             // Root branch with full range and no active interval
-            activeBranches.push(new Branch(A_min, A_max, 0, 0, -1));
-            int maxDepth = 100; // Maximum depth of recursion
+            activeBranches.push(new Branch(A_min, A_max, 0, 0, -1, null, null));
+
+            int maxDepth = 1000; // Maximum depth of recursion
             IloConstraint bestConstraint = null;
             final double FIXED_MCCORMICK_GAP_TOL = 1e-4; // Fixed tolerance for McCormick gap
+            // System.out.println("Branch and bound setup: " + (stopWatch.getTime() - branchSetupStart) + "ms");
 
             // ==================== MAIN BRANCH LOOP ====================
             while (!activeBranches.isEmpty() && stopWatch.getTime() < deadline) {
+                long remainingBranchTime = deadline - stopWatch.getTime();
+                System.out.printf("Remaining time: %d ms%n", remainingBranchTime);
+                long branchStart = stopWatch.getTime();
                 Branch currentBranch = activeBranches.pop();
                 int intervalWidth = currentBranch.aMax - currentBranch.aMin + 1;
                 System.out.printf("\nExploring branch: A=[%d,%d] (width=%d) depth=%d activeInterval=%d%n",
@@ -343,7 +469,7 @@ public class ChallengeSolver {
 
                 // Determine MIP gap tolerance based on interval size
                 double mipGapTolerance;
-                if (intervalWidth <= 4) {
+                if (intervalWidth <= Math.floor(nAisles / 10.0)) {
                     mipGapTolerance = 1e-4; // Tight tolerance for small intervals
                 } else {
                     // Dynamic tolerance based on depth
@@ -353,32 +479,35 @@ public class ChallengeSolver {
                 }
                 
                 McCormickResult result = solveMcCormickForBranch(
-                    currentBranch.aMin,
-                    currentBranch.aMax,
-                    N,
-                    mc_cplex,
-                    lp_cplex,
-                    upperBounds,
-                    X_lp,
-                    Y_lp,
-                    totalItemsExprLP,
-                    X_mc,
-                    Y_mc,
-                    A_hat,
-                    t_hat,
-                    z,
-                    Avar,
-                    t,
-                    w,
-                    waveSizeLB,
-                    waveSizeUB,
-                    nItems,
-                    orders,
-                    aisles,
-                    quantidade_pedidos,
-                    deadline - stopWatch.getTime(),
-                    mipGapTolerance
-                );
+                currentBranch,  // NEW: pass current branch
+                currentBranch.aMin,  // Use values from branch
+                currentBranch.aMax,
+                N,
+                mc_cplex,
+                lp_cplex,
+                upperBounds,
+                X_lp,
+                Y_lp,
+                totalItemsExprLP,
+                X_mc,
+                Y_mc,
+                A_hat,
+                t_hat,
+                z,
+                Avar,
+                t,
+                w,
+                waveSizeLB,
+                waveSizeUB,
+                nItems,
+                orders,
+                aisles,
+                quantidade_pedidos,
+                deadline - stopWatch.getTime(),
+                mipGapTolerance,
+                true,  // enable warm start
+                best_obj
+            );
                 if (result.feasible) {
                     double trueObj = computeObjectiveFunction(result.solution);
                     System.out.printf("Branch solution: obj=%.4f gap=%.6f activeInterval=%d%n", 
@@ -390,7 +519,11 @@ public class ChallengeSolver {
                             best_obj = trueObj;
                             bestOrders = result.selectedOrders;
                             bestAisles = result.selectedAisles;
-                            System.out.println("New best solution found!");
+                            System.out.println("New best solution found! Objective: " + best_obj);
+                            if (stopWatch.getTime() >= deadline) {
+                                System.out.println("Breaking branch loop due to time limit");
+                                break;
+                            }
 
                             // Add bound constraint for future branches
                             if (bestConstraint != null) {
@@ -413,6 +546,9 @@ public class ChallengeSolver {
                     shouldBranch = shouldBranch && 
                                 (currentBranch.depth < maxDepth) && 
                                 (intervalWidth > 1);
+
+                    // System.out.printf("Branch [%d-%d] total: %dms%n",
+                    // currentBranch.aMin, currentBranch.aMax, (stopWatch.getTime() - branchStart));
                     
                     if (shouldBranch) {
                         // Create N new subintervals
@@ -438,7 +574,8 @@ public class ChallengeSolver {
                             if (start <= end) {
                                 // Prioritize the active interval from parent solution
                                 int nextActive = (j == result.j_selected) ? result.j_selected : -1;
-                                childBranches.add(new Branch(start, end, currentBranch.depth + 1, trueObj, nextActive));
+                                childBranches.add(new Branch(start, end, currentBranch.depth + 1, trueObj, nextActive,
+                          result.selectedOrders, result.selectedAisles));  // Pass solution
                                 System.out.printf("  Subinterval %d: [%d,%d] (width=%d)%n", 
                                                  j, start, end, end - start + 1);
                             }
@@ -467,7 +604,7 @@ public class ChallengeSolver {
 
                 // Cleanup constraints
                 removeMcCormickConstraints(mc_cplex, result.constraints);
-            }
+            }   
 
             // ==================== FINAL SOLUTION ====================
             System.out.println("\n==================== Final Solution ====================");
@@ -485,38 +622,46 @@ public class ChallengeSolver {
         }
     }
 
-    // Calculate dynamic gap tolerance based on depth
+    // Calculate dynamic gap tolerance based on depth   
     private double calculateDynamicGapTolerance(int depth) {
         // Base tolerance at root level
-        double baseTolerance = 0.1; // 50% tolerance at root
+        double baseTolerance = 0.2; // 50% tolerance at root
         
         // Tolerance decreases exponentially with depth
-        double depthFactor = Math.pow(0.5, depth);
+        double depthFactor = Math.pow(0.7, depth);  
         double tolerance = baseTolerance * depthFactor;
         
         // Minimum tolerance to prevent excessive computation
-        double minTolerance = 0.1; // 10% min tolerance
-        
-        return Math.min(tolerance, minTolerance);
+        double minTolerance = 0.2; // 10% min tolerance
+        return 0.2;
+        // return Math.min(tolerance, minTolerance);
     }
 
     // ==================== HELPER METHODS ====================
     private McCormickResult solveMcCormickForBranch(
+        Branch currentBranch,  // ADDED: current branch context
         int aMin, int aMax, int N, IloCplex mc_cplex, IloCplex lp_cplex,
         Map<Integer, Double> upperBounds, IloNumVar[] X_lp, IloNumVar[] Y_lp,
         IloLinearNumExpr totalItemsExprLP, IloIntVar[] X_mc, IloIntVar[] Y_mc,
         IloNumVar[] A_hat, IloNumVar[] t_hat, IloNumVar[] z, IloNumVar Avar,
         IloNumVar t, IloNumVar w, int waveSizeLB, int waveSizeUB, int nItems,
         List<Map<Integer, Integer>> orders, List<Map<Integer, Integer>> aisles,
-        List<Integer> quantidade_pedidos, long remainingTime, double mipGapTolerance
+        List<Integer> quantidade_pedidos, long remainingTime, double mipGapTolerance,
+        boolean useWarmStart, double best_obj
     ) {
         McCormickResult result = new McCormickResult();
         result.constraints = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
 
         try {
             // ==================== UPDATE LP BOUNDS ====================
+            long lpUpdateStart = System.currentTimeMillis();
             double delta_aisles = (double) (aMax - aMin) / N;
             for (int k = 1; k <= N - 1; k++) {
+                if (System.currentTimeMillis() - startTime > remainingTime) {
+                    System.out.println("Breaking LP bounds update due to time limit");
+                    break;
+                }
                 int A_aisles = (int) Math.floor(aMin + k * delta_aisles);
                 if (upperBounds.containsKey(A_aisles)) continue;
 
@@ -540,9 +685,16 @@ public class ChallengeSolver {
                 }
                 lp_cplex.remove(sumYConstr);
             }
+            System.out.println("LP bounds update: " + (System.currentTimeMillis() - lpUpdateStart) + "ms");
 
             // ==================== ADD MCCORMICK CONSTRAINTS ====================
+            long constraintsStart = System.currentTimeMillis();
             for (int j = 0; j < N; j++) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                if (elapsed > remainingTime) {
+                    System.out.println("Breaking McCormick setup due to time");
+                    break;
+                }
                 int A_lb = (int) Math.floor(aMin + j * delta_aisles);
                 int A_ub = (j == N - 1) ? aMax : (int) Math.floor(aMin + (j + 1) * delta_aisles);
                 double tUB = upperBounds.getOrDefault(A_lb, ((double) waveSizeUB) / A_lb);
@@ -587,24 +739,81 @@ public class ChallengeSolver {
             result.constraints.add(mc_cplex.addLe(w, ub1));
             result.constraints.add(mc_cplex.addLe(w, ub2));
 
-            // ==================== SOLVE MILP WITH DYNAMIC TOLERANCE ====================
+            System.out.println("McCormick constraints: " + (System.currentTimeMillis() - constraintsStart) + "ms");
+
+            // ==================== WARM START ====================
+
+            if (System.currentTimeMillis() - startTime > remainingTime) {
+                System.out.println("Breaking warm start due to time limit");
+                return result;
+            }
+            long warmStartStart = System.currentTimeMillis();
+            // In solveMcCormickForBranch() method:
+            if (useWarmStart && currentBranch != null &&
+                currentBranch.parentOrderSolution != null &&
+                currentBranch.parentAisleSolution != null &&
+                currentBranch.parentObj >= best_obj - 1e-5) {
+                
+                int A_parent = currentBranch.parentAisleSolution.size();
+                double delta = (aMax - aMin) / (double) N;
+                int j0 = -1;
+
+                // Find active interval in current branch
+                for (int j = 0; j < N; j++) {
+                    double lowBound = aMin + j * delta;
+                    double highBound = (j == N-1) ? aMax : aMin + (j+1) * delta;
+                    if (A_parent >= lowBound && A_parent <= highBound) {
+                        j0 = j;
+                        break;
+                    }
+                }
+                
+                if (j0 != -1) {
+                    IloNumVar[] startVars = new IloNumVar[X_mc.length + Y_mc.length + z.length];
+                    double[] startVals = new double[startVars.length];
+                    int idx = 0;
+                    
+                    // Orders (X)
+                    for (int i = 0; i < X_mc.length; i++) {
+                        startVars[idx] = X_mc[i];
+                        startVals[idx] = currentBranch.parentOrderSolution.contains(i) ? 1.0 : 0.0;
+                        idx++;
+                    }
+                    
+                    // Aisles (Y)
+                    for (int j = 0; j < Y_mc.length; j++) {
+                        startVars[idx] = Y_mc[j];
+                        startVals[idx] = currentBranch.parentAisleSolution.contains(j) ? 1.0 : 0.0;
+                        idx++;
+                    }
+                    
+                    // McCormick intervals (Z)
+                    for (int j = 0; j < z.length; j++) {
+                        startVars[idx] = z[j];
+                        startVals[idx] = (j == j0) ? 1.0 : 0.0;
+                        idx++;
+                    }
+                    
+                    mc_cplex.addMIPStart(startVars, startVals, IloCplex.MIPStartEffort.Auto);
+                }
+            }
+
+            // ==================== SOLVE MILP ====================
+            long solveStart = System.currentTimeMillis();
             double timeLimitToPass = Math.max(0.1, remainingTime / 1000.0);
             mc_cplex.setParam(IloCplex.Param.TimeLimit, timeLimitToPass);
-            
-            // Set MIP gap tolerance
             mc_cplex.setParam(IloCplex.Param.MIP.Tolerances.MIPGap, mipGapTolerance);
             
-            // System.out.printf("Solving with MIP gap tolerance: %.4f%n", mipGapTolerance);
-
+            boolean solved = mc_cplex.solve();
+            System.out.println("MILP solve time: " + (System.currentTimeMillis() - solveStart) + "ms");
             
-            if (mc_cplex.solve()) {
+            if (solved) {
                 result.feasible = true;
                 result.optimal = (mc_cplex.getStatus() == IloCplex.Status.Optimal);
                 result.selectedOrders = extractSelectedOrders(mc_cplex, X_mc);
                 result.selectedAisles = extractSelectedAisles(mc_cplex, Y_mc);
                 result.solution = new ChallengeSolution(result.selectedOrders, result.selectedAisles);
 
-                
                 double wVal = mc_cplex.getValue(w);
                 double AVal = mc_cplex.getValue(Avar);
                 double tVal = mc_cplex.getValue(t);
@@ -622,6 +831,7 @@ public class ChallengeSolver {
         } catch (IloException e) {
             System.err.println("Error in McCormick solution: " + e.getMessage());
         }
+        System.out.println("McCormickForBranch total: " + (System.currentTimeMillis() - startTime) + "ms");
         return result;
     }
 

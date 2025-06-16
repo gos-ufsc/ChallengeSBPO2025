@@ -83,18 +83,71 @@ class WaveOrderPicking:
         return total_units_picked / num_visited_aisles
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 3:
-        print("Usage: python checker.py <input_file> <output_file>")
-        sys.exit(1)
-
-    wave_order_picking = WaveOrderPicking()
-    wave_order_picking.read_input(sys.argv[1])
-    selected_orders, visited_aisles = wave_order_picking.read_output(sys.argv[2])
-
-    is_feasible = wave_order_picking.is_solution_feasible(selected_orders, visited_aisles)
-    objective_value = wave_order_picking.compute_objective_function(selected_orders, visited_aisles)
-
-    print("Is solution feasible:", is_feasible)
-    if is_feasible:
-        print("Objective function value:", objective_value)
+    import os
+    import glob
+    
+    # Configure paths
+    INPUT_DIR = "others"
+    OUTPUT_DIR = "results"
+    
+    # Get all instance files
+    input_files = sorted(glob.glob(os.path.join(INPUT_DIR, "instance*.txt")))
+    
+    if not input_files:
+        print(f"No instance files found in {INPUT_DIR}/")
+        exit(1)
+    
+    # Process each instance
+    for input_file in input_files:
+        # Extract instance number
+        base_name = os.path.basename(input_file)
+        instance_num = ''.join(filter(str.isdigit, base_name))
+        output_file = os.path.join(OUTPUT_DIR, f"instance_{instance_num}.txt")
+        
+        print(f"\n{'='*50}")
+        print(f"Processing Instance: {base_name}")
+        
+        if not os.path.exists(output_file):
+            print(f"❌ Solution file not found: {os.path.basename(output_file)}")
+            continue
+        
+        # Validate solution
+        wave_order_picking = WaveOrderPicking()
+        try:
+            wave_order_picking.read_input(input_file)
+            selected_orders, visited_aisles = wave_order_picking.read_output(output_file)
+            
+            is_feasible = wave_order_picking.is_solution_feasible(selected_orders, visited_aisles)
+            objective_value = wave_order_picking.compute_objective_function(selected_orders, visited_aisles)
+            
+            print(f"Solution file: {os.path.basename(output_file)}")
+            print(f"Selected orders: {len(selected_orders)}")
+            print(f"Visited aisles: {len(visited_aisles)}")
+            print(f"Feasible: {'✅ Yes' if is_feasible else '❌ No'}")
+            
+            if is_feasible:
+                print(f"Objective Value: {objective_value:.4f}")
+            else:
+                # Detailed feasibility check
+                total_units = sum(sum(order.values()) for idx, order in enumerate(wave_order_picking.orders) if idx in selected_orders)
+                print(f"Total units: {total_units} (Required: {wave_order_picking.wave_size_lb}-{wave_order_picking.wave_size_ub})")
+                
+                # Check item coverage
+                required_items = set()
+                for order_idx in selected_orders:
+                    required_items.update(wave_order_picking.orders[order_idx].keys())
+                
+                missing_items = []
+                for item in required_items:
+                    required_qty = sum(wave_order_picking.orders[o].get(item, 0) for o in selected_orders)
+                    available_qty = sum(wave_order_picking.aisles[a].get(item, 0) for a in visited_aisles)
+                    if required_qty > available_qty:
+                        missing_items.append((item, required_qty, available_qty))
+                
+                if missing_items:
+                    print("\nMissing Items:")
+                    for item, req, avail in missing_items:
+                        print(f"  Item {item}: Required {req}, Available {avail}")
+                
+        except Exception as e:
+            print(f"🚨 Error processing files: {str(e)}")

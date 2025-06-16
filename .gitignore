@@ -29,6 +29,10 @@ __pycache__
 venv/
 .venv/
 
+a/ 
+others/
+results/
+instances/
 # Ignorar ambientes do Conda
 env/
 .conda/

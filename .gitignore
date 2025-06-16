@@ -1,5 +1,3 @@
-# Compiled class file
-*.class
 
 # Log file
 *.log
@@ -32,6 +30,7 @@ venv/
 a/ 
 others/
 results/
+resultsg/
 instances/
 # Ignorar ambientes do Conda
 env/

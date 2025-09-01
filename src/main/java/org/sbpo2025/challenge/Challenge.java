@@ -134,10 +134,10 @@ public class Challenge {
                 challenge.aisles,
                 challenge.nItems,
                 challenge.waveSizeLB,
-                challenge.waveSizeUB,
-                challenge.tLowerBound,
-                challenge.tUpperBound
+                challenge.waveSizeUB
         );
+
+        challengeSolver.printInstanceSize();
 
         ChallengeSolution challengeSolution = challengeSolver.solve(stopWatch);
 

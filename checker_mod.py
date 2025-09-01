@@ -87,9 +87,9 @@ if __name__ == "__main__":
     import glob
     
     # Configure paths
-    INPUT_DIR = "others"
-    OUTPUT_DIR = "results"
-    
+    INPUT_DIR = "datasets/a"
+    OUTPUT_DIR = "results-a"
+
     # Get all instance files
     input_files = sorted(glob.glob(os.path.join(INPUT_DIR, "instance*.txt")))
     

@@ -4,11 +4,11 @@ import sys
 import platform
 
 # Paths to the libraries
-CPLEX_PATH="$HOME/CPLEX_Studio2211/opl/bin/arm64_osx/"
+CPLEX_PATH="/opt/ibm/ILOG/CPLEX_Studio2211/cplex/bin/x86-64_linux/"
 OR_TOOLS_PATH = "$HOME/Documents/or-tools/build/lib/"
 
 USE_CPLEX = True
-USE_OR_TOOLS = True
+USE_OR_TOOLS = False
 
 MAX_RUNNING_TIME = "605s"
 
@@ -22,6 +22,8 @@ def compile_code(source_folder):
 
     if result.returncode != 0:
         print("Maven compilation failed:")
+        print(result.stderr)
+        print("--- MAVEN STDERR ---")
         print(result.stderr)
         return False
 
